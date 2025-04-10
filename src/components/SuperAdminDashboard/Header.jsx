@@ -19,18 +19,13 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import StoreIcon from '@mui/icons-material/Store';
 import StarIcon from '@mui/icons-material/Star';
 
-
-
-
 export default function Header(){
 
     const [open, setOpen] = React.useState(false);
-
     const toggleDrawer = (newOpen) => () => {
         setOpen(newOpen);
     };
 
-    
 const DrawerItems = [
     {
       label: "Customers",
@@ -71,7 +66,7 @@ const DrawerItems = [
       onClick={toggleDrawer(false)}
     >
       <List>
-        {DrawerItems.map((item, index) => (
+        {DrawerItems.map((item) => (
           <React.Fragment key={item.label}>
             <ListItem disablePadding>
               <ListItemButton>
@@ -92,7 +87,6 @@ const DrawerItems = [
 
     return(
     <div>
-        {/* <Button onClick={toggleDrawer(true)}>Open drawer</Button> */}
         <IconButton onClick={toggleDrawer(true)}>
             <MenuIcon/>
         </IconButton>

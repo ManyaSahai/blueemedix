@@ -1,5 +1,3 @@
-// src/redux/api/productApi.js
-
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { fetchAndCacheProducts } from '../utils/dataCache';
 

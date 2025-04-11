@@ -7,8 +7,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
+import { NavLink } from "react-router-dom";
 import MenuIcon from '@mui/icons-material/Menu';
 import { IconButton } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
@@ -26,36 +25,44 @@ export default function Header(){
         setOpen(newOpen);
     };
 
-const DrawerItems = [
-    {
-      label: "Customers",
-      icon: PeopleIcon
-    },
-    {
-      label: "Offers",
-      icon: LocalOfferIcon
-    },
-    {
-      label: "Products",
-      icon: InventoryIcon
-    },
-    {
-      label: "Regional admin",
-      icon: MapIcon
-    },
-    {
-      label: "Reports",
-      icon: BarChartIcon
-    },
-    {
-      label: "Sellers",
-      icon: StoreIcon
-    },
-    {
-      label: "Special Product",
-      icon: StarIcon
-    }
-  ];
+    const DrawerItems = [
+      {
+        label: "Customers",
+        icon: PeopleIcon,
+        path: "users"
+      },
+      {
+        label: "Offers",
+        icon: LocalOfferIcon,
+        path: "offers"
+      },
+      {
+        label: "Products",
+        icon: InventoryIcon,
+        path: "products"
+      },
+      {
+        label: "Regional admin",
+        icon: MapIcon,
+        path: "regional-admin"
+      },
+      {
+        label: "Reports",
+        icon: BarChartIcon,
+        path: "reports"
+      },
+      {
+        label: "Sellers",
+        icon: StoreIcon,
+        path: "sellers"
+      },
+      {
+        label: "Special Product",
+        icon: StarIcon,
+        path: "special-product"
+      }
+    ];
+    
 
       
 
@@ -68,12 +75,12 @@ const DrawerItems = [
       <List>
         {DrawerItems.map((item) => (
           <React.Fragment key={item.label}>
-            <ListItem disablePadding>
+            <ListItem disablePadding component={NavLink} to={`/superadmin/${item.path}`}>
               <ListItemButton>
                 <ListItemIcon>
                   <item.icon />
                 </ListItemIcon>
-                <ListItemText primary={item.label} />
+                <ListItemText primary={item.label} sx={{color:"#333"}} />
               </ListItemButton>
             </ListItem>
             <Divider />

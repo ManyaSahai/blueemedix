@@ -9,28 +9,20 @@ import Category from "./pages/CategoryPage/Category.jsx";
 import Contact from "./pages/ContactPage/Contact.jsx";
 import Offers from "./pages/OffersPage/Offers.jsx";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard/SuperAdminDashboard.jsx";
-<<<<<<< HEAD
+import SellerDashboard from "./pages/SellerDashboard/Seller.jsx";
 import Products from "./components/SuperAdminDashboard/Products.jsx";
 import Users from "./components/SuperAdminDashboard/Users.jsx";
-=======
-import SellerDashboard from "./pages/SellerDashboard/Seller.jsx";
->>>>>>> bd766d6 (added seller dashboard)
 
 function App() {
   const location = useLocation();
-  const isSuperAdmin = location.pathname.startsWith("/superadmin");
+  const hideNavbar =
+    location.pathname.startsWith("/superadmin") ||
+    location.pathname.startsWith("/seller");
 
-<<<<<<< HEAD
   return (
     <Theme>
-      {!isSuperAdmin && <Navbar />}
-=======
-  const hideNavbarRoutes = ["/superadmin", "/seller"];
-  const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
-  return (
-    <Theme>
-      {shouldShowNavbar && <Navbar />}
->>>>>>> bd766d6 (added seller dashboard)
+      {!hideNavbar && <Navbar />}
+
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/about" element={<About />} />
@@ -38,22 +30,15 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" />
         <Route path="/offers" element={<Offers />} />
-<<<<<<< HEAD
+        <Route path="/seller" element={<SellerDashboard />} />
 
-        {/* Super Admin Layout Route with Nested Children */}
         <Route path="/superadmin/*" element={<SuperAdminDashboard />}>
           <Route path="products" element={<Products />} />
-          <Route path="users" element={<Users/>} />
-          {/* Add more child routes here later */}
+          <Route path="users" element={<Users />} />
         </Route>
       </Routes>
-      {!isSuperAdmin && <Footer />}
-=======
-        <Route path="/superadmin" element={<SuperAdminDashboard />} />
-        <Route path="/seller" element={<SellerDashboard />} />
-      </Routes>
-      <Footer />
->>>>>>> bd766d6 (added seller dashboard)
+
+      {!hideNavbar && <Footer />}
     </Theme>
   );
 }

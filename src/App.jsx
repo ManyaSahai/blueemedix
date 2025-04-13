@@ -12,6 +12,7 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard/SuperAdminDashboard
 import SellerDashboard from "./pages/SellerDashboard/Seller.jsx";
 import Products from "./components/SuperAdminDashboard/Products.jsx";
 import Users from "./components/SuperAdminDashboard/Users.jsx";
+import Reports from "./components/SuperAdminDashboard/Reports.jsx";
 
 function App() {
   const location = useLocation();
@@ -34,7 +35,13 @@ function App() {
 
         <Route path="/superadmin/*" element={<SuperAdminDashboard />}>
           <Route path="products" element={<Products />} />
+<<<<<<< Updated upstream
           <Route path="users" element={<Users />} />
+=======
+          <Route path="users" element={<Users/>} />
+          <Route path="reports" element={<Reports/>} />
+          {/* Add more child routes here later */}
+>>>>>>> Stashed changes
         </Route>
       </Routes>
 

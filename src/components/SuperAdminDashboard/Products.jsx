@@ -34,20 +34,22 @@ import {
             </Button>
           </Box>
         </Box>
-  
         <Grid container spacing={3}>
           {products?.map((product) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-              <Card sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <Grid item xs={12} sm={6} md={4} lg={3} key={product.id} sx={{display:"flex", alignItems:"center", margin:"auto"}}>
+              <Card sx={{ height: "150px",width:"400px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    {product.title}
+                  {product.title.length > 50 
+                    ? product.title.slice(0, 50) + '...' 
+                    : product.title
+                  }
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     ${product.price}
                   </Typography>
                 </CardContent>
-                <CardActions sx={{ justifyContent: "flex-end" }}>
+                <CardActions sx={{ justifyContent: "flex-end", marginTop:"-50px" }}>
                   <IconButton color="primary" title="Edit">
                     <EditIcon />
                   </IconButton>

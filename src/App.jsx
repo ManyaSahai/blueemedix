@@ -35,13 +35,7 @@ function App() {
 
         <Route path="/superadmin/*" element={<SuperAdminDashboard />}>
           <Route path="products" element={<Products />} />
-<<<<<<< Updated upstream
           <Route path="users" element={<Users />} />
-=======
-          <Route path="users" element={<Users/>} />
-          <Route path="reports" element={<Reports/>} />
-          {/* Add more child routes here later */}
->>>>>>> Stashed changes
         </Route>
       </Routes>
 

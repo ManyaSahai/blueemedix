@@ -20,6 +20,7 @@ import {
   Divider,
   Alert,
 } from "@mui/material";
+import { useGetUsersQuery } from "../../redux/usersApi";
 
 function SellerDashboard() {
   const [activeTab, setActiveTab] = useState("orderStatus");
@@ -27,7 +28,12 @@ function SellerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  //  Fakestore API data
+  const {
+    data: users,
+    isLoading: usersLoading,
+    error: usersError,
+  } = useGetUsersQuery();
+
   const [orders, setOrders] = useState([]);
   const [complaints, setComplaints] = useState([]);
 
@@ -42,8 +48,10 @@ function SellerDashboard() {
         const data = await response.json();
         setProducts(data);
 
-        generateSampleOrders(data);
-        generateSampleComplaints();
+        if (users) {
+          generateSampleOrders(data);
+          generateSampleComplaints();
+        }
 
         setLoading(false);
       } catch (err) {
@@ -53,10 +61,10 @@ function SellerDashboard() {
     };
 
     fetchProducts();
-  }, []);
+  }, [users]);
 
   const generateSampleOrders = (productData) => {
-    if (!productData || productData.length === 0) return;
+    if (!productData || productData.length === 0 || !users) return;
 
     const statuses = [
       "Accepted",
@@ -65,23 +73,19 @@ function SellerDashboard() {
       "Rejected",
       "Cancelled",
     ];
-    const customers = [
-      "John Doe",
-      "Jane Smith",
-      "Mike Jones",
-      "Sarah Brown",
-      "Alex Wilson",
-    ];
 
     const generatedOrders = productData.slice(0, 10).map((product, index) => {
       const orderDate = new Date();
       orderDate.setDate(orderDate.getDate() - Math.floor(Math.random() * 30));
 
+      const randomUser = users[Math.floor(Math.random() * users.length)];
+
       return {
         id: `ORD00${index + 1}`,
         product: product.title,
         productId: product.id,
-        customer: customers[Math.floor(Math.random() * customers.length)],
+        customer: `${randomUser.name.firstname} ${randomUser.name.lastname}`,
+        customerId: randomUser.id,
         status: statuses[Math.floor(Math.random() * statuses.length)],
         date: orderDate.toISOString().split("T")[0],
         price: product.price,
@@ -93,6 +97,8 @@ function SellerDashboard() {
   };
 
   const generateSampleComplaints = () => {
+    if (!users) return;
+
     const issues = [
       "Wrong product",
       "Damaged package",
@@ -102,21 +108,18 @@ function SellerDashboard() {
     ];
     const statuses = ["isValid", "Not Valid"];
     const resolutions = ["Replace", "Refund", "None"];
-    const customers = [
-      "John Doe",
-      "Jane Smith",
-      "Mike Jones",
-      "Sarah Brown",
-      "Alex Wilson",
-    ];
 
     const generatedComplaints = Array(5)
       .fill()
       .map((_, index) => {
         const orderNum = Math.floor(Math.random() * 10) + 1;
+
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+
         return {
           id: `COMP00${index + 1}`,
-          customer: customers[Math.floor(Math.random() * customers.length)],
+          customer: `${randomUser.name.firstname} ${randomUser.name.lastname}`,
+          customerId: randomUser.id,
           order: `ORD00${orderNum}`,
           issue: issues[Math.floor(Math.random() * issues.length)],
           status: statuses[Math.floor(Math.random() * statuses.length)],
@@ -163,7 +166,7 @@ function SellerDashboard() {
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (loading || usersLoading) {
       return (
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
@@ -171,10 +174,10 @@ function SellerDashboard() {
       );
     }
 
-    if (error) {
+    if (error || usersError) {
       return (
         <Alert severity="error" sx={{ m: 2 }}>
-          Error loading data: {error}
+          Error loading data: {error || usersError}
         </Alert>
       );
     }
@@ -303,63 +306,33 @@ function SellerDashboard() {
                   <TableCell>Customer ID</TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Email</TableCell>
-                  <TableCell>Registration Date</TableCell>
-                  <TableCell>Orders</TableCell>
+                  <TableCell>Phone</TableCell>
+                  <TableCell>Address</TableCell>
                   <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {[
-                  {
-                    id: "CUST001",
-                    name: "John Doe",
-                    email: "john@example.com",
-                    date: "2025-01-12",
-                    orders: 3,
-                    status: "Active",
-                  },
-                  {
-                    id: "CUST002",
-                    name: "Jane Smith",
-                    email: "jane@example.com",
-                    date: "2025-02-03",
-                    orders: 5,
-                    status: "Active",
-                  },
-                  {
-                    id: "CUST003",
-                    name: "Mike Jones",
-                    email: "mike@example.com",
-                    date: "2025-03-18",
-                    orders: 1,
-                    status: "New",
-                  },
-                  {
-                    id: "CUST004",
-                    name: "Sarah Brown",
-                    email: "sarah@example.com",
-                    date: "2025-03-22",
-                    orders: 2,
-                    status: "Active",
-                  },
-                  {
-                    id: "CUST005",
-                    name: "Alex Wilson",
-                    email: "alex@example.com",
-                    date: "2025-04-01",
-                    orders: 0,
-                    status: "Inactive",
-                  },
-                ].map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell>{customer.id}</TableCell>
-                    <TableCell>{customer.name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.date}</TableCell>
-                    <TableCell>{customer.orders}</TableCell>
-                    <TableCell>{customer.status}</TableCell>
+                {users &&
+                  users.map((user) => {
+                    const status = Math.random() > 0.3 ? "Active" : "New";
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          CUST{user.id.toString().padStart(3, "0")}
+                        </TableCell>
+                        <TableCell>{`${user.name.firstname} ${user.name.lastname}`}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.phone}</TableCell>
+                        <TableCell>{`${user.address.city}, ${user.address.street}`}</TableCell>
+                        <TableCell>{status}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                {!users && (
+                  <TableRow>
+                    <TableCell colSpan={6}>Loading user data...</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -596,7 +569,6 @@ function SellerDashboard() {
 
       <Container maxWidth="xl" sx={{ mt: 3, flex: 1 }}>
         <Paper sx={{ borderRadius: 1, overflow: "hidden" }}>
-          {/* Navigation Tabs */}
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
@@ -618,7 +590,6 @@ function SellerDashboard() {
             <Tab label="Invoices" value="invoices" />
           </Tabs>
 
-          {/* Tab Content */}
           <Box sx={{ p: 0 }}>{renderContent()}</Box>
         </Paper>
       </Container>

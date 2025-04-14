@@ -13,12 +13,14 @@ import SellerDashboard from "./pages/SellerDashboard/Seller.jsx";
 import Products from "./components/SuperAdminDashboard/Products.jsx";
 import Users from "./components/SuperAdminDashboard/Users.jsx";
 import Reports from "./components/SuperAdminDashboard/Reports.jsx";
+import RegionalAdmin from "./pages/RegionalAdmin/RegionalAdmin.jsx";
 
 function App() {
   const location = useLocation();
   const hideNavbar =
     location.pathname.startsWith("/superadmin") ||
-    location.pathname.startsWith("/seller");
+    location.pathname.startsWith("/seller") ||
+    location.pathname.startsWith("/regionaladmin");
 
   return (
     <Theme>
@@ -32,6 +34,7 @@ function App() {
         <Route path="/login" />
         <Route path="/offers" element={<Offers />} />
         <Route path="/seller" element={<SellerDashboard />} />
+        <Route path="/regionaladmin" element={<RegionalAdmin />} />
 
         <Route path="/superadmin/*" element={<SuperAdminDashboard />}>
           <Route path="products" element={<Products />} />

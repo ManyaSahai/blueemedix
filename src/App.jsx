@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation , Navigate} from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Theme from "./Theme";
 import Footer from "./components/Footer";
@@ -13,6 +13,7 @@ import SellerDashboard from "./pages/SellerDashboard/Seller.jsx";
 import Products from "./components/SuperAdminDashboard/Products.jsx";
 import Users from "./components/SuperAdminDashboard/Users.jsx";
 import Reports from "./components/SuperAdminDashboard/Reports.jsx";
+import PhoneAuthForm from "./components/PhoneAuthForm.jsx";
 
 function App() {
   const location = useLocation();
@@ -29,14 +30,17 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/category" element={<Category />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/login" />
+        <Route path="/login" element={<PhoneAuthForm/>}/>
         <Route path="/offers" element={<Offers />} />
         <Route path="/seller" element={<SellerDashboard />} />
 
         <Route path="/superadmin/*" element={<SuperAdminDashboard />}>
+          <Route index element={<Navigate to="products" replace />} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />
+          <Route path="reports" element={<Reports />} />
         </Route>
+
       </Routes>
 
       {!hideNavbar && <Footer />}

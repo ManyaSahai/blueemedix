@@ -1,4 +1,4 @@
-// src/utils/dataCache.js
+import { openDB } from 'idb'; // Import openDB from idb package
 
 const DB_NAME = 'SuperAdminDB';
 const STORE_NAME = 'products';
@@ -40,48 +40,72 @@ export const getFromIndexedDB = async () => {
 
 // Store fetched products in IndexedDB
 export const storeInIndexedDB = async (data) => {
-    const db = await openIndexedDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-  
-    data.forEach((item) => {
-      store.put(item); // `put` = add or update
-    });
-  
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => {
-        console.log("✅ Products stored in IndexedDB");
-        resolve();
-      };
-      tx.onerror = (e) => {
-        console.error("❌ Failed to store in IndexedDB:", e);
-        reject("Failed to store in IndexedDB");
-      };
-    });
-  };
-  
+  const db = await openIndexedDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+
+  data.forEach((item) => {
+    store.put(item); // `put` = add or update
+  });
+
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => {
+      console.log("✅ Products stored in IndexedDB");
+      resolve();
+    };
+    tx.onerror = (e) => {
+      console.error("❌ Failed to store in IndexedDB:", e);
+      reject("Failed to store in IndexedDB");
+    };
+  });
+};
 
 // Fetch with Cache API + IndexedDB fallback
 export const fetchAndCacheProducts = async () => {
-    const cachedDBData = await getFromIndexedDB();
-    if (cachedDBData && cachedDBData.length > 0) {
-      return cachedDBData;
-    }
-  
-    const cache = await caches.open('product-cache');
-    const cachedResponse = await cache.match(FAKESTORE_API);
-    if (cachedResponse) {
-      const data = await cachedResponse.json();
-      await storeInIndexedDB(data);
-      return data;
-    }
-  
-    const response = await fetch(FAKESTORE_API);
-    const responseClone = response.clone(); // ✅ clone before reading
-    const data = await response.json();
-  
-    cache.put(FAKESTORE_API, responseClone); // ✅ safe now
+  const cachedDBData = await getFromIndexedDB();
+  if (cachedDBData && cachedDBData.length > 0) {
+    return cachedDBData;
+  }
+
+  const cache = await caches.open('product-cache');
+  const cachedResponse = await cache.match(FAKESTORE_API);
+  if (cachedResponse) {
+    const data = await cachedResponse.json();
     await storeInIndexedDB(data);
     return data;
-  };
-  
+  }
+
+  const response = await fetch(FAKESTORE_API);
+  const responseClone = response.clone(); // ✅ clone before reading
+  const data = await response.json();
+
+  cache.put(FAKESTORE_API, responseClone); // ✅ safe now
+  await storeInIndexedDB(data);
+  return data;
+};
+
+// Add product to IndexedDB
+export async function addProductToIndexedDB(product) {
+  const db = await openDB(DB_NAME, 1); // Open the DB with version 1
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  await tx.store.add(product);
+  await tx.done;
+  return product;
+}
+
+// Update product in IndexedDB
+export async function updateProductInIndexedDB(product) {
+  const db = await openDB(DB_NAME, 1); // Open the DB with version 1
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  await tx.store.put(product);
+  await tx.done;
+  return product;
+}
+
+// Delete product from IndexedDB
+export async function deleteProductFromIndexedDB(id) {
+  const db = await openDB(DB_NAME, 1); // Open the DB with version 1
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  await tx.store.delete(id);
+  await tx.done;
+}

@@ -19,12 +19,14 @@ import PersonIcon from "@mui/icons-material/Person";
 import HomeIcon from "@mui/icons-material/Home";
 import CategoryIcon from "@mui/icons-material/Category";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import HistoryIcon from '@mui/icons-material/History';
 import logo from "../images/logo.png";
 import { useTheme } from "@mui/material/styles";
 import { useContext } from "react";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import { ColorModeContext } from "../Theme";
+import { Link } from "react-router-dom";
 
 const NavbarContainer = styled(AppBar)(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -277,14 +279,30 @@ const Navbar = () => {
               alignItems: "center",
             }}
           >
-            <IconButtonContainer>
-              <IconButton color="primary">
-                <Badge badgeContent={0} color="primary">
-                  <ShoppingCartIcon />
-                </Badge>
-              </IconButton>
-              <IconLabel>Cart</IconLabel>
-            </IconButtonContainer>
+              <Link to="/cart">
+                <IconButtonContainer>
+                    <IconButton color="primary">
+                      <Badge badgeContent={0} color="primary">
+                        <ShoppingCartIcon />
+                      </Badge>
+                    </IconButton>
+                    <IconLabel>
+                      Cart
+                    </IconLabel>
+                </IconButtonContainer>
+              </Link>
+              <Link to="/orders">
+                <IconButtonContainer>
+                  <IconButton color="primary">
+                    <Badge badgeContent={0} color="primary">
+                      <HistoryIcon/>
+                    </Badge>
+                  </IconButton>
+                  <IconLabel>
+                    Orders
+                  </IconLabel>
+                </IconButtonContainer>
+              </Link>
             <IconButtonContainer>
               <IconButton
                 color="primary"

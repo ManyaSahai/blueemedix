@@ -4,17 +4,23 @@ import { useState, useEffect } from "react";
 export default function EditProductModal({ open, onClose, product, onSave }) {
   const [form, setForm] = useState(product || {});
 
+  // Log the product being passed to the modal
   useEffect(() => {
-    if (product) setForm(product);
+    console.log('Product in modal:', product);
+    if (product) setForm(product);  // Update form data whenever the product prop changes
   }, [product]);
 
   const handleChange = (e) => {
+    console.log("Form change:", e.target.name, e.target.value);  // Log every change to the form
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = () => {
-    onSave(form);
-    onClose();
+    console.log("Saving product:", form);  // Log the form data before saving
+    if (form._id) {
+      onSave(form);  // Pass the entire updated product object to onSave
+    }
+    onClose();  // Close the modal
   };
 
   return (
@@ -23,10 +29,10 @@ export default function EditProductModal({ open, onClose, product, onSave }) {
       <DialogContent>
         <TextField
           margin="dense"
-          name="title"
-          label="Title"
+          name="name"
+          label="Name"
           fullWidth
-          value={form.title || ""}
+          value={form.name || ""}  // Make sure form.name is a string
           onChange={handleChange}
         />
         <TextField
@@ -35,10 +41,10 @@ export default function EditProductModal({ open, onClose, product, onSave }) {
           label="Price"
           type="number"
           fullWidth
-          value={form.price || ""}
+          value={form.price?.$numberDecimal || form.price || ""}  // Ensure form.price is a number or a string
           onChange={handleChange}
         />
-        {/* Add more fields as needed */}
+        {/* Add more fields if needed */}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
@@ -47,3 +53,5 @@ export default function EditProductModal({ open, onClose, product, onSave }) {
     </Dialog>
   );
 }
+
+

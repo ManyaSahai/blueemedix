@@ -1,8 +1,8 @@
-import { openDB } from 'idb'; // Import openDB from idb package
+import { openDB } from 'idb';  // Import openDB from idb package
+import getBaseUrl  from '../utils/baseURL';  // Import the backend base URL
 
 const DB_NAME = 'SuperAdminDB';
 const STORE_NAME = 'products';
-const FAKESTORE_API = 'https://fakestoreapi.com/products';
 
 // Open IndexedDB
 const openIndexedDB = () => {
@@ -30,7 +30,7 @@ export const getFromIndexedDB = async () => {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      console.log("📦 Retrieved from IndexedDB:", request.result);
+      // console.log("Retrieved from IndexedDB:", request.result);
       resolve(request.result);
     };
 
@@ -44,15 +44,25 @@ export const storeInIndexedDB = async (data) => {
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
 
-  data.forEach((item) => {
-    store.put(item); // `put` = add or update
+  // ✅ Normalize to array
+  const items = Array.isArray(data) ? data : [data];
+
+  items.forEach((item) => {
+    if (item._id) {
+      item.id = item._id;
+      delete item._id;
+    }
+
+    if (!item.id) {
+      console.error('Product does not have an id:', item);
+      return;
+    }
+
+    store.put(item);
   });
 
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () => {
-      console.log("✅ Products stored in IndexedDB");
-      resolve();
-    };
+    tx.oncomplete = () => resolve();
     tx.onerror = (e) => {
       console.error("❌ Failed to store in IndexedDB:", e);
       reject("Failed to store in IndexedDB");
@@ -60,33 +70,79 @@ export const storeInIndexedDB = async (data) => {
   });
 };
 
-// Fetch with Cache API + IndexedDB fallback
+
+// Fetch products with Cache API + IndexedDB fallback
 export const fetchAndCacheProducts = async () => {
+  // Check if we have products in IndexedDB first
   const cachedDBData = await getFromIndexedDB();
   if (cachedDBData && cachedDBData.length > 0) {
     return cachedDBData;
   }
 
+  // If no data in IndexedDB, try Cache API
   const cache = await caches.open('product-cache');
-  const cachedResponse = await cache.match(FAKESTORE_API);
+  const cachedResponse = await cache.match(`${getBaseUrl}/products`);
   if (cachedResponse) {
     const data = await cachedResponse.json();
-    await storeInIndexedDB(data);
+    await storeInIndexedDB(data);  // Store the cached response in IndexedDB for future use
     return data;
   }
 
-  const response = await fetch(FAKESTORE_API);
-  const responseClone = response.clone(); // ✅ clone before reading
+  // If no data in Cache, fetch from backend
+  const response = await fetch(`${getBaseUrl}/products`);
+  const responseClone = response.clone();  // Clone the response before reading
   const data = await response.json();
 
-  cache.put(FAKESTORE_API, responseClone); // ✅ safe now
+  // Cache the response for future use
+  cache.put(`${getBaseUrl}/products`, responseClone);  // Cache the fetched products
+
+  // Store the products in IndexedDB
   await storeInIndexedDB(data);
+
   return data;
 };
 
+// Add product to the backend and IndexedDB
+export async function addProductToBackend(product) {
+  const response = await fetch(`${getBaseUrl}/products/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(product),
+  });
+
+  if (!response.ok) throw new Error('Failed to add product');
+  return await response.json();
+}
+
+// Update product in the backend and IndexedDB
+export async function updateProductInBackend(product) {
+  const response = await fetch(`${getBaseUrl}/products/${product.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(product),
+  });
+
+  if (!response.ok) throw new Error('Failed to update product');
+  return await response.json();
+}
+
+// Delete product from the backend and IndexedDB
+export async function deleteProductFromBackend(id) {
+  const response = await fetch(`${getBaseUrl}/products/delete/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) throw new Error('Failed to delete product');
+  return await response.json();
+}
+
 // Add product to IndexedDB
 export async function addProductToIndexedDB(product) {
-  const db = await openDB(DB_NAME, 1); // Open the DB with version 1
+  const db = await openDB(DB_NAME, 1);  // Open the DB with version 1
   const tx = db.transaction(STORE_NAME, 'readwrite');
   await tx.store.add(product);
   await tx.done;
@@ -95,16 +151,32 @@ export async function addProductToIndexedDB(product) {
 
 // Update product in IndexedDB
 export async function updateProductInIndexedDB(product) {
-  const db = await openDB(DB_NAME, 1); // Open the DB with version 1
-  const tx = db.transaction(STORE_NAME, 'readwrite');
-  await tx.store.put(product);
-  await tx.done;
-  return product;
+  console.log('🧠 Entered updateProductInIndexedDB function');  // MUST SHOW THIS
+
+  try {
+    const db = await openDB(DB_NAME, 1);
+    console.log('📦 DB opened:', db);
+
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+
+    console.log('📥 About to put product:', product);
+
+    await store.put(product);
+    await tx.done;
+
+    console.log('✅ Product updated in IndexedDB');
+    return product;
+  } catch (err) {
+    console.error('❌ Error in updateProductInIndexedDB:', err);
+  }
 }
+
+
 
 // Delete product from IndexedDB
 export async function deleteProductFromIndexedDB(id) {
-  const db = await openDB(DB_NAME, 1); // Open the DB with version 1
+  const db = await openDB(DB_NAME, 1);  // Open the DB with version 1
   const tx = db.transaction(STORE_NAME, 'readwrite');
   await tx.store.delete(id);
   await tx.done;

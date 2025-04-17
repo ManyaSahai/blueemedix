@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { FixedSizeGrid as VirtualGrid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { fetchAndCacheProducts } from "../../utils/dataCache.js";
 import {
   Box,
   Container,
@@ -7,8 +10,14 @@ import {
   Grid,
   Breadcrumbs,
   Link,
+  FormControlLabel,
+  Checkbox,
+  Card,
+  CardContent,
+  CardMedia
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import {useGetProductsQuery} from "../../redux/productApi.js";
 
 import categoryData from "../CategoryData.jsx";
 
@@ -22,10 +31,33 @@ const CategoryTitle = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(3),
   fontWeight: 600,
 }));
+const CARD_WIDTH = 300;
+const CARD_HEIGHT = 280;
+const COLUMN_COUNT = 3;
+
 
 const CategoryPage = () => {
+  // console.log(categoryData);
   const { categoryId } = useParams();
+  const [products, setProducts] = useState([]);
   const [category, setCategory] = useState(null);
+  const {data:productsData, refetch} = useGetProductsQuery();
+  // console.log(products);
+
+  useEffect(() => {
+    const loadCached = async () => {
+      const cached = await fetchAndCacheProducts();
+      setProducts(cached); // Show instantly from IndexedDB
+      refetch(); // Then trigger live API fetch
+    };
+    loadCached();
+  }, []);
+  
+  useEffect(() => {
+    if (productsData) {
+      setProducts(productsData); // Update when fresh data comes
+    }
+  }, [productsData]);
 
   useEffect(() => {
     const formattedCategoryId = categoryId.replace(/-/g, " ");
@@ -81,11 +113,88 @@ const CategoryPage = () => {
           Browse our selection of {category.label.toLowerCase()} products
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={8}>
+
+        <Box sx={{display:"flex", flexDirection:"column", alignItems:"center", gap:"24px"}}>
+          <Box sx={{border: '1px solid #1976d2', borderRadius: 2, boxShadow: 3, px: 4, py:2}}>
+            <Typography variant="body2" sx={{marginBottom:"6px"}}>
+              Special Deals
+            </Typography>
+            <Box sx={{display:"flex", flexDirection:"column", alignItems:"flex-start" , gap:"8px"}}>
+                <FormControlLabel
+                  control={<Checkbox />}
+                  label="Up to 10%"
+                />
+                <FormControlLabel
+                  control={<Checkbox />}
+                  label="11% to 25%"
+                />
+                <FormControlLabel
+                  control={<Checkbox />}
+                  label="26% to 50%"
+                />
+                <FormControlLabel
+                  control={<Checkbox />}
+                  label="Above 50%"
+                />
+            </Box>  
+          </Box>
+          <Box sx={{}}>
+            Brands
+          </Box>
+        </Box>
+        
           <Grid item xs={12}>
             <Typography variant="body2">
               Products for {category.label} category will be displayed here
             </Typography>
+            <Box sx={{ height: 500, width: '100%' }}>
+              <AutoSizer>
+                {({ height, width }) => {
+                  const columnCount = Math.floor(width / CARD_WIDTH);
+                  const rowCount = Math.ceil(products.length / columnCount);
+
+                  return (
+                    <VirtualGrid
+                      columnCount={columnCount}
+                      columnWidth={CARD_WIDTH}
+                      height={height}
+                      rowCount={rowCount}
+                      rowHeight={CARD_HEIGHT}
+                      width={width}
+                    >
+                      {({ columnIndex, rowIndex, style }) => {
+                        const index = rowIndex * columnCount + columnIndex;
+                        const product = products[index];
+                        if (!product) return null;
+
+                        return (
+                          <Box key={product._id} style={style} p={1}>
+                            <Card sx={{ height: '100%' }}>
+                              <CardContent>
+                              <CardMedia
+                                component="img"
+                                alt={product.name}
+                                height="140"
+                                image={product.image_link || "default-image.jpg"}
+                                sx={{ objectFit: "contain" }}
+                              />
+                                <Typography variant="subtitle1" noWrap>
+                                  {product.name}
+                                </Typography>
+                                <Typography variant="body2">
+                              ₹{product.price?.$numberDecimal || product.price}
+                            </Typography>
+                              </CardContent>
+                            </Card>
+                          </Box>
+                        );
+                      }}
+                    </VirtualGrid>
+                  );
+                }}
+              </AutoSizer>
+            </Box>
           </Grid>
         </Grid>
       </Container>

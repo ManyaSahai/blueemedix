@@ -76,34 +76,22 @@ function RegionalAdminDashboard() {
   const [pendingSellers, setPendingSellers] = useState([]);
   const [approvedSellers, setApprovedSellers] = useState([]);
 
-    // Cache handling for pending sellers
-    useEffect(() => {
-      if (pendingData?.sellers) {
-        setPendingSellers(pendingData.sellers);
-        cachePendingSellers(pendingData.sellers);
-      } else {
-        // Load from IndexedDB as fallback
-        (async () => {
-          const cached = await getCachedPendingSellers();
-          setPendingSellers(cached);
-        })();
-      }
-    }, [pendingData]);
   
-    useEffect(() => {
-      if (pendingData?.sellers) {
-        console.log('Fetched Pending Sellers:', pendingData.sellers); // Log fetched data
-        setPendingSellers(pendingData.sellers);
-        cachePendingSellers(pendingData.sellers);
-      } else {
-        // Load from IndexedDB as fallback
-        (async () => {
-          const cached = await getCachedPendingSellers();
-          console.log('Loaded Cached Pending Sellers:', cached); // Log cached data
-          setPendingSellers(cached);
-        })();
-      }
-    }, [pendingData]);
+  useEffect(() => {
+    console.log('Raw pendingData:', pendingData); // 👈 Add this
+    if (pendingData?.sellers) {
+      console.log('Fetched Pending Sellers:', pendingData.sellers);
+      setPendingSellers(pendingData.sellers);
+      cachePendingSellers(pendingData.sellers);
+    } else {
+      (async () => {
+        const cached = await getCachedPendingSellers();
+        console.log('Loaded Cached Pending Sellers:', cached);
+        setPendingSellers(cached);
+      })();
+    }
+  }, [pendingData]);
+  
     
 
   const handleUserMenuOpen = (event) => {

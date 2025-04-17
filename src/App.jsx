@@ -16,6 +16,7 @@ import Users from "./components/SuperAdminDashboard/Users.jsx";
 import Reports from "./components/SuperAdminDashboard/Reports.jsx";
 import Login from "./pages/Login/Login.jsx"; 
 import PhoneAuthForm from "./components/PhoneAuthForm.jsx";
+import Sellers from "./components/SuperAdminDashboard/Sellers.jsx";
 
 function App() {
   const location = useLocation();
@@ -44,6 +45,7 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="sellers" element={<Sellers/>} />
         </Route>
       </Routes>
 

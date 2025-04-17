@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
@@ -55,12 +55,56 @@ import {
   Assignment as TaskIcon,
   RemoveShoppingCart as AbandonedIcon,
 } from "@mui/icons-material";
+import {useFetchPendingSellersQuery,
+  useApproveSellerMutation,
+  useRejectSellerMutation,
+  useFetchApprovedSellersQuery} from "../../redux/regionalAdminApi";
+
+import {getCachedPendingSellers,
+  cachePendingSellers} from "../../utils/regionalSellerCache";
 
 function RegionalAdminDashboard() {
   const [open, setOpen] = useState(true);
   const [activeMenu, setActiveMenu] = useState("seller-approvals");
   const [anchorEl, setAnchorEl] = useState(null);
   const [tabValue, setTabValue] = useState(0);
+
+  const { data: pendingData, isLoading: isLoadingPending } = useFetchPendingSellersQuery();
+  const { data: approvedData, isLoading: isLoadingApproved } = useFetchApprovedSellersQuery();
+  const [approveSeller] = useApproveSellerMutation();
+  const [rejectSeller] = useRejectSellerMutation();
+  const [pendingSellers, setPendingSellers] = useState([]);
+  const [approvedSellers, setApprovedSellers] = useState([]);
+
+    // Cache handling for pending sellers
+    useEffect(() => {
+      if (pendingData?.sellers) {
+        setPendingSellers(pendingData.sellers);
+        cachePendingSellers(pendingData.sellers);
+      } else {
+        // Load from IndexedDB as fallback
+        (async () => {
+          const cached = await getCachedPendingSellers();
+          setPendingSellers(cached);
+        })();
+      }
+    }, [pendingData]);
+  
+    useEffect(() => {
+      if (pendingData?.sellers) {
+        console.log('Fetched Pending Sellers:', pendingData.sellers); // Log fetched data
+        setPendingSellers(pendingData.sellers);
+        cachePendingSellers(pendingData.sellers);
+      } else {
+        // Load from IndexedDB as fallback
+        (async () => {
+          const cached = await getCachedPendingSellers();
+          console.log('Loaded Cached Pending Sellers:', cached); // Log cached data
+          setPendingSellers(cached);
+        })();
+      }
+    }, [pendingData]);
+    
 
   const handleUserMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -276,34 +320,38 @@ function RegionalAdminDashboard() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sellerApprovals.map((seller) => (
-                    <TableRow key={seller.id}>
-                      <TableCell>{seller.id}</TableCell>
+                  {pendingSellers.map((seller) => (
+                    <TableRow key={seller._id}> {/* Using _id for unique key */}
+                      <TableCell>{seller._id}</TableCell> {/* Display seller's ID */}
                       <TableCell>{seller.name}</TableCell>
-                      <TableCell>{seller.email}</TableCell>
-                      <TableCell>{seller.location}</TableCell>
-                      <TableCell>{seller.date}</TableCell>
+                      <TableCell>{seller.e_mail}</TableCell> {/* Use e_mail field for email */}
+                      <TableCell>{`${seller.address.city}, ${seller.address.state}`}</TableCell> {/* Concatenate city and state for location */}
+                      <TableCell>{new Date(seller.created_at).toLocaleDateString()}</TableCell> {/* Display formatted application date */}
                       <TableCell>
                         <Chip
-                          label={seller.status}
+                          label={seller.verification_status}
                           size="small"
                           sx={{
                             backgroundColor:
-                              seller.status === "Pending"
-                                ? "#fff9c4"
-                                : "#e8f5e9",
-                            color:
-                              seller.status === "Pending"
-                                ? "#ff8f00"
-                                : "#2e7d32",
+                              seller.verification_status === "pending" ? "#fff9c4" : "#e8f5e9",
+                            color: seller.verification_status === "pending" ? "#ff8f00" : "#2e7d32",
                           }}
                         />
                       </TableCell>
                       <TableCell>
-                        <IconButton color="primary" size="small" sx={{ mr: 1 }}>
+                        <IconButton
+                          color="primary"
+                          size="small"
+                          sx={{ mr: 1 }}
+                          onClick={() => handleApprove(seller._id)} // Use seller._id for approve action
+                        >
                           <ApproveIcon />
                         </IconButton>
-                        <IconButton color="error" size="small">
+                        <IconButton
+                          color="error"
+                          size="small"
+                          onClick={() => handleReject(seller._id)} // Use seller._id for reject action
+                        >
                           <RejectIcon />
                         </IconButton>
                       </TableCell>
@@ -312,6 +360,7 @@ function RegionalAdminDashboard() {
                 </TableBody>
               </Table>
             </TableContainer>
+
           </Paper>
         );
 

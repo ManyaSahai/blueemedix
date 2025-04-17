@@ -12,7 +12,7 @@ export const userApi = createApi({
       return { data: cached };
     }
 
-    const rawBaseQuery = fetchBaseQuery({ baseUrl: 'https://fakestoreapi.com/' });
+    const rawBaseQuery = fetchBaseQuery({ baseUrl: 'http://fakestoreapi.com/' });
     const result = await rawBaseQuery(args, api, extraOptions);
 
     if (result?.data) {

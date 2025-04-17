@@ -14,6 +14,7 @@ import RegionalAdmin from "./pages/RegionalAdmin/RegionalAdmin.jsx";
 import Products from "./components/SuperAdminDashboard/Products.jsx";
 import Users from "./components/SuperAdminDashboard/Users.jsx";
 import Reports from "./components/SuperAdminDashboard/Reports.jsx";
+import Login from "./pages/Login/Login.jsx"; 
 import PhoneAuthForm from "./components/PhoneAuthForm.jsx";
 
 function App() {
@@ -32,8 +33,8 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/category" element={<Category />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/login" />
-        <Route path="/login" />
+        <Route path="/login"  element={<Login />} />
+        {/* <Route path="/login" /> */}
         <Route path="/offers" element={<Offers />} />
         <Route path="/seller" element={<SellerDashboard />} />
         <Route path="/regionaladmin" element={<RegionalAdmin />} />

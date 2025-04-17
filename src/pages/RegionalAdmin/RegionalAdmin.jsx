@@ -331,10 +331,10 @@ function RegionalAdminDashboard() {
                 <FormControl sx={{ minWidth: 180, mr: 2 }}>
                   <Select value="all-regions" displayEmpty size="small">
                     <MenuItem value="all-regions">All Regions</MenuItem>
-                    <MenuItem value="north">North Region</MenuItem>
-                    <MenuItem value="east">East Region</MenuItem>
-                    <MenuItem value="west">West Region</MenuItem>
-                    <MenuItem value="south">South Region</MenuItem>
+                    <MenuItem value="north">Bihar Region</MenuItem>
+                    <MenuItem value="east">West Bengal Region </MenuItem>
+                    <MenuItem value="west">Odhisha Region</MenuItem>
+                    <MenuItem value="south">Jharkhand Region</MenuItem>
                   </Select>
                 </FormControl>
                 <TextField

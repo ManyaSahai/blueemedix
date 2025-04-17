@@ -98,33 +98,38 @@ const FranchiseButton = styled(Button)(({ theme }) => ({
 }));
 
 const SearchCategoryDropDown = [
-  'All',
-  'Baby Care',
-  'Ayurveda',
-  'Diabetes',
-  'Personal Care',
-  'Featured',
-  'Fitness & Supplements',
-  'Covid Prevention',
-  'Healthcare Devices',
-  'Health Conditions',
-  'Other'
+  "All",
+  "Baby Care",
+  "Ayurveda",
+  "Diabetes",
+  "Personal Care",
+  "Featured",
+  "Fitness & Supplements",
+  "Covid Prevention",
+  "Healthcare Devices",
+  "Health Conditions",
+  "Other",
 ];
-export const sortedSearchCategoryDropDown = SearchCategoryDropDown.slice().sort();
+export const sortedSearchCategoryDropDown =
+  SearchCategoryDropDown.slice().sort();
 
 const Navigation = [
   {
-    label: "Home", icon: <HomeIcon/>
+    label: "Home",
+    icon: <HomeIcon />,
   },
   {
-    label: "Category", icon: <CategoryIcon/>
+    label: "Category",
+    icon: <CategoryIcon />,
   },
   {
-    label: "Offers", icon: <LocalOfferIcon/>
+    label: "Offers",
+    icon: <LocalOfferIcon />,
   },
   {
-    label: "Login", icon: <PersonIcon />
-  }
+    label: "Login",
+    icon: <PersonIcon />,
+  },
 ];
 
 // Main component
@@ -137,14 +142,25 @@ const Navbar = () => {
   };
 
   return (
-    <NavbarContainer sx={{paddingY:"8px"}}>
-      <Toolbar sx={{display:"flex", justifyContent:"space-evenly", alignItems:"center"}}>
+    <NavbarContainer sx={{ paddingY: "8px" }}>
+      <Toolbar
+        sx={{
+          display: "flex",
+          justifyContent: "space-evenly",
+          alignItems: "center",
+        }}
+      >
         <LogoContainer>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <img
               src={logo}
               alt="BlueMedix Logo"
-              style={{ width:"auto" ,height: "100px", marginRight: "8px", objectFit:"contain" }}
+              style={{
+                width: "auto",
+                height: "100px",
+                marginRight: "8px",
+                objectFit: "contain",
+              }}
             />
           </Box>
         </LogoContainer>
@@ -154,15 +170,15 @@ const Navbar = () => {
               value={searchCategory}
               onChange={handleCategoryChange}
               disableUnderline
-              sx={{ borderRight: "1px solid #ccc", marginLeft:"20px" }}
+              sx={{ borderRight: "1px solid #ccc", marginLeft: "20px" }}
             >
-              {
-                sortedSearchCategoryDropDown.map((item)=>{
-                  return <MenuItem value={item} key={item}>
+              {sortedSearchCategoryDropDown.map((item) => {
+                return (
+                  <MenuItem value={item} key={item}>
                     {item}
                   </MenuItem>
-                })
-              }
+                );
+              })}
             </Select>
           </StyledFormControl>
           <StyledInputBase
@@ -173,91 +189,121 @@ const Navbar = () => {
             <SearchIcon sx={{ color: "#3f51b5" }} />
           </IconButton>
         </SearchContainer>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-  {Navigation.map((navItem) => {
-    if (navItem.label === "Category") {
-      return (
-        <NavItem
-          key={navItem.label}
-          sx={{ position: "relative", display: "flex", flexDirection: "column", gap: "2px" }}
-          onMouseEnter={() => setCategoryHovered(true)}
-          onMouseLeave={() => setCategoryHovered(false)}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
-          <CircleIconButton size="small">
-            {navItem.icon}
-          </CircleIconButton>
-          <Typography variant="body2">{navItem.label}</Typography>
+          {Navigation.map((navItem) => {
+            if (navItem.label === "Category") {
+              return (
+                <NavItem
+                  key={navItem.label}
+                  sx={{
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                  }}
+                  onMouseEnter={() => setCategoryHovered(true)}
+                  onMouseLeave={() => setCategoryHovered(false)}
+                >
+                  <CircleIconButton size="small">
+                    {navItem.icon}
+                  </CircleIconButton>
+                  <Typography variant="body2">{navItem.label}</Typography>
 
-          {/* Dropdown Box */}
-          {categoryHovered && (
-            <Box
-              onMouseEnter={() => setCategoryHovered(true)}
-              onMouseLeave={() => setCategoryHovered(false)}
-              sx={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                backgroundColor: "#fff",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                padding: 2,
-                boxShadow: 3,
-                zIndex: 1000,
-                minWidth: "200px"
-              }}
-            >
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {sortedSearchCategoryDropDown.map((item) => (
-                  <Typography variant="body2" key={item} sx={{ cursor: "pointer" }}>
-                    {item}
-                  </Typography>
-                ))}
-              </Box>
-            </Box>
-          )}
-        </NavItem>
-      );
-    }
-
-    // Other nav items
-    return (
-      <NavItem key={navItem.label} sx={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <CircleIconButton size="small">
-          {navItem.icon}
-        </CircleIconButton>
-        <Typography variant="body2">{navItem.label}</Typography>
-      </NavItem>
-    );
-  })}
-</Box>
-
-        <Box sx={{display:"flex",  flexDirection:"column"}}>
-              <Box sx={{display:"flex", justifyContent:"center", alignItems:"center"}}>
-                <IconButtonContainer>
-                  <IconButton color="primary">
-                    <Badge badgeContent={0} color="primary">
-                      <ShoppingCartIcon />
-                    </Badge>
-                  </IconButton>
-                  <IconLabel>Cart</IconLabel>
-                </IconButtonContainer>
-                <IconButtonContainer>
-                    <IconButton
-                      color="primary"
-                      onClick={useContext(ColorModeContext).toggleColorMode}
+                  {/* Dropdown Box */}
+                  {categoryHovered && (
+                    <Box
+                      onMouseEnter={() => setCategoryHovered(true)}
+                      onMouseLeave={() => setCategoryHovered(false)}
+                      sx={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        backgroundColor: "#fff",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                        padding: 2,
+                        boxShadow: 3,
+                        zIndex: 1000,
+                        minWidth: "200px",
+                      }}
                     >
-                      {useTheme().palette.mode === "dark" ? (
-                        <LightModeIcon />
-                      ) : (
-                        <DarkModeIcon />
-                      )}
-                    </IconButton>
-                    <IconLabel>
-                      {useTheme().palette.mode === "dark" ? "Light" : "Dark"}
-                    </IconLabel>
-                  </IconButtonContainer>
-              </Box>
-          <FranchiseButton variant="outlined">Franchise Enquiry</FranchiseButton>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1,
+                        }}
+                      >
+                        {sortedSearchCategoryDropDown.map((item) => (
+                          <Typography
+                            variant="body2"
+                            key={item}
+                            sx={{ cursor: "pointer" }}
+                          >
+                            {item}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </NavItem>
+              );
+            }
+
+            // Other nav items
+            return (
+              <NavItem
+                key={navItem.label}
+                sx={{ display: "flex", flexDirection: "column", gap: "2px" }}
+              >
+                <CircleIconButton size="small">{navItem.icon}</CircleIconButton>
+                <Typography variant="body2">{navItem.label}</Typography>
+              </NavItem>
+            );
+          })}
+        </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <IconButtonContainer>
+              <IconButton color="primary">
+                <Badge badgeContent={0} color="primary">
+                  <ShoppingCartIcon />
+                </Badge>
+              </IconButton>
+              <IconLabel>Cart</IconLabel>
+            </IconButtonContainer>
+            <IconButtonContainer>
+              <IconButton
+                color="primary"
+                onClick={useContext(ColorModeContext).toggleColorMode}
+              >
+                {useTheme().palette.mode === "dark" ? (
+                  <LightModeIcon />
+                ) : (
+                  <DarkModeIcon />
+                )}
+              </IconButton>
+              <IconLabel>
+                {useTheme().palette.mode === "dark" ? "Light" : "Dark"}
+              </IconLabel>
+            </IconButtonContainer>
+          </Box>
+          <FranchiseButton variant="outlined">
+            Franchise Enquiry
+          </FranchiseButton>
         </Box>
       </Toolbar>
     </NavbarContainer>

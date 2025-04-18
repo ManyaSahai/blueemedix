@@ -40,6 +40,7 @@ const Login = () => {
 
       // Store tokens in local storage
       localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', data.user.id);
       if (data.refreshToken) {
         localStorage.setItem('refreshToken', data.refreshToken);
       }
@@ -56,7 +57,7 @@ const Login = () => {
       } else if (role === 'Seller') {
         navigate('/seller');
       } else {
-        navigate('/'); // Customer default
+        navigate('/'); // Customer default  
       }
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');

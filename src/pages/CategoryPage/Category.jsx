@@ -15,7 +15,8 @@ import {
   Checkbox,
   Card,
   CardContent,
-  CardMedia
+  CardMedia,
+  IconButton
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {useGetProductsQuery} from "../../redux/productApi.js";
@@ -23,7 +24,7 @@ import {useGetProductsQuery} from "../../redux/productApi.js";
 import categoryData from "../CategoryData.jsx";
 import { useAddItemToCartMutation } from "../../redux/cartApi.js";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-
+import { Add, Remove } from '@mui/icons-material';
 const CategoryContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3, 0),
 }));
@@ -33,7 +34,7 @@ const CategoryTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
 }));
 const CARD_WIDTH = 300;
-const CARD_HEIGHT = 280;
+const CARD_HEIGHT = 380;
 const COLUMN_COUNT = 3;
 
 
@@ -42,20 +43,35 @@ const CategoryPage = () => {
   const { categoryId } = useParams();
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const {data:productsData, refetch} = useGetProductsQuery();
   const [addItemToCart] = useAddItemToCartMutation();
-const handleAddToCart = (product) => {
-  // Call the mutation to add the product to the cart
-  addItemToCart({ productId: product._id, quantity: 1 })
-    .unwrap()
-    .then(() => {
-      alert('Product added to cart!');
-    })
-    .catch((error) => {
-      console.error('Failed to add item to cart:', error);
-    });
-};
-  // console.log(products);
+
+  const handleAddToCart = (product, quantity) => {
+    const userId = localStorage.getItem('userId'); // ✅ Fetch the userId
+  
+    if (!userId) {
+      console.error('User ID not found');
+      return;
+    }
+  
+    addItemToCart({ userId, productId: product._id, quantity})
+      .unwrap()
+      .then(() => {
+        alert('Product added to cart!');
+      })
+      .catch((error) => {
+        console.error('Failed to add item to cart:', error);
+      });
+  };
+
+  const handleIncrement = () => {
+    setQuantity(prevQuantity => prevQuantity + 1); // Increments the quantity
+  };
+  
+  const handleDecrement = () => {
+    setQuantity(prevQuantity => (prevQuantity > 1 ? prevQuantity - 1 : prevQuantity)); // Decrements if quantity > 1
+  };
 
   useEffect(() => {
     const loadCached = async () => {
@@ -198,10 +214,21 @@ const handleAddToCart = (product) => {
                                 <Typography variant="body2">
                               ₹{product.price?.$numberDecimal || product.price}
                             </Typography>
+                            <Box display="flex" alignItems="center" mt={2}>
+                                <IconButton onClick={handleDecrement} color="primary" disabled={quantity <= 1}>
+                                  <Remove />
+                                </IconButton>
+                                <Typography variant="body1" mx={1}>
+                                  {quantity}
+                                </Typography>
+                                <IconButton onClick={handleIncrement} color="primary">
+                                  <Add />
+                                </IconButton>
+                              </Box>
                             <Button
                                   variant="contained"
                                   color="primary"
-                                  onClick={() => handleAddToCart(product)}
+                                  onClick={() => handleAddToCart(product, quantity)}
                                   sx={{ mt: 2 }}
                                 >
                                   Add to Cart

@@ -5,6 +5,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import { fetchAndCacheProducts } from "../../utils/dataCache.js";
 import {
   Box,
+  Button,
   Container,
   Typography,
   Grid,
@@ -20,7 +21,7 @@ import { styled } from "@mui/material/styles";
 import {useGetProductsQuery} from "../../redux/productApi.js";
 
 import categoryData from "../CategoryData.jsx";
-
+import { useAddItemToCartMutation } from "../../redux/cartApi.js";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 const CategoryContainer = styled(Box)(({ theme }) => ({
@@ -42,6 +43,18 @@ const CategoryPage = () => {
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState(null);
   const {data:productsData, refetch} = useGetProductsQuery();
+  const [addItemToCart] = useAddItemToCartMutation();
+const handleAddToCart = (product) => {
+  // Call the mutation to add the product to the cart
+  addItemToCart({ productId: product._id, quantity: 1 })
+    .unwrap()
+    .then(() => {
+      alert('Product added to cart!');
+    })
+    .catch((error) => {
+      console.error('Failed to add item to cart:', error);
+    });
+};
   // console.log(products);
 
   useEffect(() => {
@@ -185,6 +198,14 @@ const CategoryPage = () => {
                                 <Typography variant="body2">
                               ₹{product.price?.$numberDecimal || product.price}
                             </Typography>
+                            <Button
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={() => handleAddToCart(product)}
+                                  sx={{ mt: 2 }}
+                                >
+                                  Add to Cart
+                                </Button>
                               </CardContent>
                             </Card>
                           </Box>

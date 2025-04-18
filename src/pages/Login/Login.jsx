@@ -24,7 +24,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,7 +48,16 @@ const Login = () => {
       setIsLoading(false);
       
       // Redirect to dashboard or home page
-      navigate('/dashboard');
+      const role = data.user.role;
+      if (role === 'SuperAdmin') {
+        navigate('/superadmin/products');
+      } else if (role === 'RegionalAdmin') {
+        navigate('/regional-admin');
+      } else if (role === 'Seller') {
+        navigate('/seller');
+      } else {
+        navigate('/'); // Customer default
+      }
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
       setIsLoading(false);

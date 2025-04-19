@@ -1,6 +1,6 @@
 import React from "react";
 
-const BlueMedixSection = () => {
+const BluemedixProducts = () => {
   const products = [
     {
       id: 1,
@@ -181,4 +181,4 @@ const BlueMedixSection = () => {
   );
 };
 
-export default BlueMedixSection;
+export default BluemedixProducts;

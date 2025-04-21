@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { FixedSizeGrid as VirtualGrid } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { FixedSizeGrid as VirtualGrid } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 import { fetchAndCacheProducts } from "../../utils/dataCache.js";
 import {
   Box,
@@ -16,15 +16,15 @@ import {
   Card,
   CardContent,
   CardMedia,
-  IconButton
+  IconButton,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import {useGetProductsQuery} from "../../redux/productApi.js";
+import { useGetProductsQuery } from "../../redux/productApi.js";
 
 import categoryData from "../CategoryData.jsx";
 import { useAddItemToCartMutation } from "../../redux/cartApi.js";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import { Add, Remove } from '@mui/icons-material';
+import { Add, Remove } from "@mui/icons-material";
 const CategoryContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3, 0),
 }));
@@ -37,40 +37,41 @@ const CARD_WIDTH = 300;
 const CARD_HEIGHT = 380;
 const COLUMN_COUNT = 3;
 
-
 const CategoryPage = () => {
   // console.log(categoryData);
   const { categoryId } = useParams();
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const {data:productsData, refetch} = useGetProductsQuery();
+  const { data: productsData, refetch } = useGetProductsQuery();
   const [addItemToCart] = useAddItemToCartMutation();
 
   const handleAddToCart = (product, quantity) => {
-    const userId = localStorage.getItem('userId'); // ✅ Fetch the userId
-  
+    const userId = localStorage.getItem("userId"); // ✅ Fetch the userId
+
     if (!userId) {
-      console.error('User ID not found');
+      console.error("User ID not found");
       return;
     }
-  
-    addItemToCart({ userId, productId: product._id, quantity})
+
+    addItemToCart({ userId, productId: product._id, quantity })
       .unwrap()
       .then(() => {
-        alert('Product added to cart!');
+        alert("Product added to cart!");
       })
       .catch((error) => {
-        console.error('Failed to add item to cart:', error);
+        console.error("Failed to add item to cart:", error);
       });
   };
 
   const handleIncrement = () => {
-    setQuantity(prevQuantity => prevQuantity + 1); // Increments the quantity
+    setQuantity((prevQuantity) => prevQuantity + 1); // Increments the quantity
   };
-  
+
   const handleDecrement = () => {
-    setQuantity(prevQuantity => (prevQuantity > 1 ? prevQuantity - 1 : prevQuantity)); // Decrements if quantity > 1
+    setQuantity((prevQuantity) =>
+      prevQuantity > 1 ? prevQuantity - 1 : prevQuantity
+    ); // Decrements if quantity > 1
   };
 
   useEffect(() => {
@@ -81,7 +82,7 @@ const CategoryPage = () => {
     };
     loadCached();
   }, []);
-  
+
   useEffect(() => {
     if (productsData) {
       setProducts(productsData); // Update when fresh data comes
@@ -143,41 +144,48 @@ const CategoryPage = () => {
         </Typography>
 
         <Grid container spacing={8}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "24px",
+            }}
+          >
+            <Box
+              sx={{
+                border: "1px solid #1976d2",
+                borderRadius: 2,
+                boxShadow: 3,
+                px: 4,
+                py: 2,
+              }}
+            >
+              <Typography variant="body2" sx={{ marginBottom: "6px" }}>
+                Special Deals
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                }}
+              >
+                <FormControlLabel control={<Checkbox />} label="Up to 10%" />
+                <FormControlLabel control={<Checkbox />} label="11% to 25%" />
+                <FormControlLabel control={<Checkbox />} label="26% to 50%" />
+                <FormControlLabel control={<Checkbox />} label="Above 50%" />
+              </Box>
+            </Box>
+            <Box sx={{}}>Brands</Box>
+          </Box>
 
-        <Box sx={{display:"flex", flexDirection:"column", alignItems:"center", gap:"24px"}}>
-          <Box sx={{border: '1px solid #1976d2', borderRadius: 2, boxShadow: 3, px: 4, py:2}}>
-            <Typography variant="body2" sx={{marginBottom:"6px"}}>
-              Special Deals
-            </Typography>
-            <Box sx={{display:"flex", flexDirection:"column", alignItems:"flex-start" , gap:"8px"}}>
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="Up to 10%"
-                />
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="11% to 25%"
-                />
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="26% to 50%"
-                />
-                <FormControlLabel
-                  control={<Checkbox />}
-                  label="Above 50%"
-                />
-            </Box>  
-          </Box>
-          <Box sx={{}}>
-            Brands
-          </Box>
-        </Box>
-        
           <Grid item xs={12}>
             <Typography variant="body2">
               Products for {category.label} category will be displayed here
             </Typography>
-            <Box sx={{ height: 500, width: '100%' }}>
+            <Box sx={{ height: 500, width: "100%" }}>
               <AutoSizer>
                 {({ height, width }) => {
                   const columnCount = Math.floor(width / CARD_WIDTH);
@@ -199,36 +207,49 @@ const CategoryPage = () => {
 
                         return (
                           <Box key={product._id} style={style} p={1}>
-                            <Card sx={{ height: '100%' }}>
+                            <Card sx={{ height: "100%" }}>
                               <CardContent>
-                              <CardMedia
-                                component="img"
-                                alt={product.name}
-                                height="140"
-                                image={product.image_link || "default-image.jpg"}
-                                sx={{ objectFit: "contain" }}
-                              />
+                                <CardMedia
+                                  component="img"
+                                  alt={product.name}
+                                  height="140"
+                                  image={
+                                    product.image_link || "default-image.jpg"
+                                  }
+                                  sx={{ objectFit: "contain" }}
+                                />
                                 <Typography variant="subtitle1" noWrap>
                                   {product.name}
                                 </Typography>
                                 <Typography variant="body2">
-                              ₹{product.price?.$numberDecimal || product.price}
-                            </Typography>
-                            <Box display="flex" alignItems="center" mt={2}>
-                                <IconButton onClick={handleDecrement} color="primary" disabled={quantity <= 1}>
-                                  <Remove />
-                                </IconButton>
-                                <Typography variant="body1" mx={1}>
-                                  {quantity}
+                                  ₹
+                                  {product.price?.$numberDecimal ||
+                                    product.price}
                                 </Typography>
-                                <IconButton onClick={handleIncrement} color="primary">
-                                  <Add />
-                                </IconButton>
-                              </Box>
-                            <Button
+                                <Box display="flex" alignItems="center" mt={2}>
+                                  <IconButton
+                                    onClick={handleDecrement}
+                                    color="primary"
+                                    disabled={quantity <= 1}
+                                  >
+                                    <Remove />
+                                  </IconButton>
+                                  <Typography variant="body1" mx={1}>
+                                    {quantity}
+                                  </Typography>
+                                  <IconButton
+                                    onClick={handleIncrement}
+                                    color="primary"
+                                  >
+                                    <Add />
+                                  </IconButton>
+                                </Box>
+                                <Button
                                   variant="contained"
                                   color="primary"
-                                  onClick={() => handleAddToCart(product, quantity)}
+                                  onClick={() =>
+                                    handleAddToCart(product, quantity)
+                                  }
                                   sx={{ mt: 2 }}
                                 >
                                   Add to Cart

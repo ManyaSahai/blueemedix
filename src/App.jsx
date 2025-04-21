@@ -15,7 +15,7 @@ import RegionalAdmin from "./pages/RegionalAdmin/RegionalAdmin.jsx";
 import Products from "./components/SuperAdminDashboard/Products.jsx";
 import Users from "./components/SuperAdminDashboard/Users.jsx";
 import Reports from "./components/SuperAdminDashboard/Reports.jsx";
-import Login from "./pages/Login/Login.jsx"; 
+import Login from "./pages/Login/Login.jsx";
 import Register from "./components/Register.jsx";
 import Sellers from "./components/SuperAdminDashboard/Sellers.jsx";
 import Cart from "./components/Cart.jsx";
@@ -40,20 +40,13 @@ function App() {
         <Route path="/category/:categoryId" element={<Category />} />
         <Route path="/contact" element={<Contact />} />
         {/* uncomment below line */}
-        <Route path="/login"  element={<Login />} />
+        <Route path="/login" element={<Login />} />
         {/* <Route path="/login"  element={<Register />} /> */}
         <Route path="/offers" element={<Offers />} />
-        <Route path="/cart" element={<Cart/>} />
-        <Route path="/orders" element={<Orders/>} />
-
-        <Route path="/seller" element={
-          <ProtectedRoute allowedRoles={['Seller']}>
-          <SellerDashboard /> </ProtectedRoute>} />
-        <Route path="/regional-admin" element={
-          <ProtectedRoute allowedRoles={['RegionalAdmin']}>
-          <RegionalAdmin />
-          </ProtectedRoute>
-          } />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/seller" element={<SellerDashboard />} />
+        <Route path="/regional-admin" element={<RegionalAdmin />} />
 
         <Route path="/superadmin/*" element={
           <ProtectedRoute allowedRoles={['SuperAdmin']}>
@@ -64,7 +57,7 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="sellers" element={<Sellers/>} />
+          <Route path="sellers" element={<Sellers />} />
         </Route>
       </Routes>
 

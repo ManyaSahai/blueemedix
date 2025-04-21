@@ -1,5 +1,6 @@
 import React from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from "./components/Navbar";
 import Theme from "./Theme";
 import Footer from "./components/Footer";
@@ -19,6 +20,8 @@ import Register from "./components/Register.jsx";
 import Sellers from "./components/SuperAdminDashboard/Sellers.jsx";
 import Cart from "./components/Cart.jsx";
 import Orders from "./components/Orders.jsx";
+import './index.css';
+
 
 function App() {
   const location = useLocation();
@@ -42,10 +45,21 @@ function App() {
         <Route path="/offers" element={<Offers />} />
         <Route path="/cart" element={<Cart/>} />
         <Route path="/orders" element={<Orders/>} />
-        <Route path="/seller" element={<SellerDashboard />} />
-        <Route path="/regional-admin" element={<RegionalAdmin />} />
 
-        <Route path="/superadmin/*" element={<SuperAdminDashboard />}>
+        <Route path="/seller" element={
+          <ProtectedRoute allowedRoles={['Seller']}>
+          <SellerDashboard /> </ProtectedRoute>} />
+        <Route path="/regional-admin" element={
+          <ProtectedRoute allowedRoles={['RegionalAdmin']}>
+          <RegionalAdmin />
+          </ProtectedRoute>
+          } />
+
+        <Route path="/superadmin/*" element={
+          <ProtectedRoute allowedRoles={['SuperAdmin']}>
+          <SuperAdminDashboard />
+          </ProtectedRoute>
+          }>
           <Route index element={<Navigate to="products" replace />} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />

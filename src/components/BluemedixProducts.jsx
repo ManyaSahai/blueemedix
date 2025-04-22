@@ -5,7 +5,7 @@ const BluemedixProducts = () => {
     {
       id: 1,
       name: "Dr Morepen BP Monitor BP-09",
-      image: "/api/placeholder/200/200",
+      image: "/src/images/1.jpg",
       originalPrice: "Rs 1565.00",
       discountedPrice: "Rs 1095.50",
       discount: "30% OFF",
@@ -13,7 +13,7 @@ const BluemedixProducts = () => {
     {
       id: 2,
       name: "Himalaya liv. 52 ds tablet",
-      image: "/api/placeholder/200/200",
+      image: "/src/images/2.jpg",
       originalPrice: "Rs 155.00",
       discountedPrice: "Rs 147.25",
       discount: "5% OFF",
@@ -21,7 +21,7 @@ const BluemedixProducts = () => {
     {
       id: 3,
       name: "Dettol Sensitive Liquid Handwash",
-      image: "/api/placeholder/200/200",
+      image: "/src/images/3.jpg",
       originalPrice: "Rs 209.00",
       discountedPrice: "Rs 202.73",
       discount: "3% OFF",
@@ -29,7 +29,7 @@ const BluemedixProducts = () => {
     {
       id: 4,
       name: "Complan Refill Powder Chocolate",
-      image: "/api/placeholder/200/200",
+      image: "/src/images/4.jpg",
       originalPrice: "Rs 540.00",
       discountedPrice: "Rs 518.40",
       discount: "4% OFF",
@@ -37,7 +37,7 @@ const BluemedixProducts = () => {
     {
       id: 5,
       name: "Himalaya Anti-Dandruff Shampoo",
-      image: "/api/placeholder/200/200",
+      image: "/src/images/5.jpg",
       originalPrice: "Rs 260.00",
       discountedPrice: "Rs 252.20",
       discount: "3% OFF",
@@ -45,7 +45,7 @@ const BluemedixProducts = () => {
     {
       id: 6,
       name: "Horlicks Mother's Powder Vanilla",
-      image: "/api/placeholder/200/200",
+      image: "/src/images/6.jpg",
       originalPrice: "Rs 529.00",
       discountedPrice: "Rs 513.13",
       discount: "3% OFF",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useGetCartQuery, useDeleteCartItemMutation } from "../redux/cartApi";
 import {
   Button,
@@ -8,7 +8,13 @@ import {
   Box,
   Container,
   Divider,
+  Alert,
+  IconButton,
+  Stack,
+  Paper,
 } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import DeleteIcon from "@mui/icons-material/Delete";
 import CheckoutPage from "./Checkout";
 
 const Cart = () => {
@@ -16,6 +22,9 @@ const Cart = () => {
   const { data: cartItems, error, isLoading } = useGetCartQuery(userId);
   const [deleteCartItem] = useDeleteCartItemMutation(); // Mutation to delete cart items
   const [showCheckout, setShowCheckout] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleRemoveItem = (productId) => {
     deleteCartItem({ userId, productId }) // Remove item from cart
@@ -33,6 +42,40 @@ const Cart = () => {
     setShowCheckout(true);
   };
 
+  const handleUploadClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter((file) => {
+      const fileType = file.type;
+      // Allow PDFs, images and common document formats
+      return (
+        fileType.includes("pdf") ||
+        fileType.includes("image") ||
+        fileType.includes("document") ||
+        fileType.includes("msword") ||
+        fileType.includes("officedocument")
+      );
+    });
+
+    if (validFiles.length) {
+      setUploadedFiles([...uploadedFiles, ...validFiles]);
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000);
+    }
+
+    // Reset file input
+    event.target.value = null;
+  };
+
+  const handleRemoveFile = (indexToRemove) => {
+    setUploadedFiles(
+      uploadedFiles.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading cart</div>;
 
@@ -46,11 +89,80 @@ const Cart = () => {
 
   // If showing checkout page
   if (showCheckout) {
-    return <CheckoutPage />;
+    return <CheckoutPage prescriptions={uploadedFiles} />;
   }
 
   return (
     <Container maxWidth="md">
+      {uploadSuccess && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Prescription uploaded successfully!
+        </Alert>
+      )}
+
+      {/* Upload Prescription Button Section */}
+      <Card sx={{ mb: 3, mt: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Upload Your Prescription
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Upload prescriptions as PDF, document, or image files
+          </Typography>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            multiple
+          />
+
+          <Button
+            variant="contained"
+            startIcon={<CloudUploadIcon />}
+            onClick={handleUploadClick}
+            sx={{ mb: 2 }}
+          >
+            Upload Prescription
+          </Button>
+
+          {uploadedFiles.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Uploaded Files ({uploadedFiles.length})
+              </Typography>
+              <Stack spacing={1}>
+                {uploadedFiles.map((file, index) => (
+                  <Paper
+                    key={index}
+                    variant="outlined"
+                    sx={{
+                      p: 1,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography variant="body2" noWrap sx={{ maxWidth: "80%" }}>
+                      {file.name}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveFile(index)}
+                      aria-label="remove file"
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Paper>
+                ))}
+              </Stack>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
       <Typography variant="h4" gutterBottom>
         Your Cart
       </Typography>

@@ -9,9 +9,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-
-
-
 const Register = () => {
   const [step, setStep] = useState('phone');
   const [phone, setPhone] = useState('');
@@ -21,6 +18,7 @@ const Register = () => {
   const [otpError, setOtpError] = useState(false);
   const [timer, setTimer] = useState(30);
   const resendTimerRef = useRef(null);
+  const recaptchaVerifierRef = useRef(null);
 
   useEffect(() => {
     if (step === 'otp' && timer > 0) {
@@ -38,43 +36,86 @@ const Register = () => {
     return () => clearInterval(resendTimerRef.current);
   }, [step]);
 
-  // ✅ FIXED: Recaptcha initialization
+  // Cleanup function to clear reCAPTCHA when component unmounts
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-  
-    try {
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          'recaptcha-container',
-          {
-            size: 'invisible',
-            callback: (response) => {
-              console.log('reCAPTCHA solved');
-            },
-            'expired-callback': () => {
-              console.warn('reCAPTCHA expired');
-            }
-          }
-        );
-        window.recaptchaVerifier.render().catch(console.error);
+    return () => {
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+        } catch (error) {
+          console.error("Error clearing reCAPTCHA:", error);
+        }
       }
+    };
+  }, []);
+
+  const setupRecaptcha = () => {
+    try {
+      // Clean up any existing instance
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      }
+      
+      // Create a new instance
+      recaptchaVerifierRef.current = new RecaptchaVerifier(
+        auth,
+        'recaptcha-container',
+        {
+          size: 'invisible',
+          callback: (response) => {
+            console.log('reCAPTCHA solved:', response);
+          },
+          'expired-callback': () => {
+            console.warn('reCAPTCHA expired');
+            alert("reCAPTCHA expired. Please try again.");
+          }
+        }
+      );
+      
+      return recaptchaVerifierRef.current;
     } catch (error) {
       console.error('reCAPTCHA init error:', error);
+      alert(`Failed to initialize reCAPTCHA: ${error.message}`);
+      return null;
     }
-  }, []);
-  
+  };
 
   const handleSendOtp = async () => {
     try {
-      if (!window.recaptchaVerifier) return alert("Recaptcha not ready");
+      // Setup reCAPTCHA right before using it
+      const recaptchaVerifier = setupRecaptcha();
+      if (!recaptchaVerifier) return;
+      
+      // Ensure proper phone number format
       const fullPhone = `+91${phone}`;
-      const result = await signInWithPhoneNumber(auth, fullPhone, window.recaptchaVerifier);
+      console.log("Sending OTP to:", fullPhone);
+      
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier);
+      console.log("OTP sent successfully");
       setConfirmationResult(result);
       setStep('otp');
     } catch (error) {
       console.error("OTP Send Failed:", error);
-      alert("Failed to send OTP");
+      
+      // More detailed error message for debugging
+      if (error.code === 'auth/invalid-app-credential') {
+        alert("Firebase configuration issue. Please verify your Firebase setup and domain settings.");
+      } else if (error.code === 'auth/quota-exceeded') {
+        alert("SMS quota exceeded. Try again later.");
+      } else {
+        alert(`Failed to send OTP: ${error.message}`);
+      }
+      
+      // Reset reCAPTCHA on error
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (clearError) {
+          console.error("Error clearing reCAPTCHA:", clearError);
+        }
+      }
     }
   };
 
@@ -90,6 +131,7 @@ const Register = () => {
     } catch (error) {
       console.error("OTP Verification Failed:", error);
       setOtpError(true);
+      alert(`OTP verification failed: ${error.message}`);
     }
   };
 
@@ -103,9 +145,21 @@ const Register = () => {
     }
   };
 
-  const handleResendOtp = () => {
-    setTimer(30);
-    alert("Resend functionality placeholder. Implement resend token if needed.");
+  const handleResendOtp = async () => {
+    try {
+      // Setup a new reCAPTCHA for resend
+      const recaptchaVerifier = setupRecaptcha();
+      if (!recaptchaVerifier) return;
+      
+      const fullPhone = `+91${phone}`;
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier);
+      setConfirmationResult(result);
+      setTimer(30);
+      alert("OTP has been resent to your phone.");
+    } catch (error) {
+      console.error("OTP Resend Failed:", error);
+      alert(`Failed to resend OTP: ${error.message}`);
+    }
   };
 
   const isSendEnabled = /^[6-9]\d{9}$/.test(phone) && termsAccepted;
@@ -227,7 +281,7 @@ const Register = () => {
         )}
       </Paper>
 
-      {/* ✅ Required Recaptcha container */}
+      {/* reCAPTCHA container */}
       <div id="recaptcha-container"></div>
     </Container>
   );

@@ -7,12 +7,15 @@ const getAuthToken = () => localStorage.getItem('token');
 export const regionalAdminApi = createApi({
   reducerPath: 'regionalAdminApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/regional-admin',
-    prepareHeaders: (headers) => {
-      const token = getAuthToken(); // Retrieve token from localStorage
+    baseUrl: 'http://localhost:5000/api/regional-admin',
+    prepareHeaders: (headers, { getState }) => {
+      const token = getAuthToken();
+      console.log('Token being used:', token);
+      
       if (token) {
-        // If token exists, add it to the Authorization header
-        headers.set('Authorization', `Bearer ${token}`);
+        // Make sure there's a space between "Bearer" and the token
+        headers.set('Authorization', ` ${token}`);
+        console.log('Authorization header set:', `${token}`);
       }
       return headers;
     },

@@ -91,6 +91,28 @@ function RegionalAdminDashboard() {
       })();
     }
   }, [pendingData]);
+
+  // Add these handler functions to your component
+const handleApprove = async (sellerId) => {
+  try {
+    await approveSeller(sellerId).unwrap();
+    // Optional: Show success message
+  } catch (error) {
+    console.error("Failed to approve seller:", error);
+    // Optional: Show error message
+  }
+};
+
+const handleReject = async (sellerId) => {
+  try {
+    // You might want to prompt for a reason before calling this
+    await rejectSeller({ sellerId, reason: "Application rejected" }).unwrap();
+    // Optional: Show success message
+  } catch (error) {
+    console.error("Failed to reject seller:", error);
+    // Optional: Show error message
+  }
+};
   
     
 
@@ -109,6 +131,8 @@ function RegionalAdminDashboard() {
   const menuItems = [
     { id: "dashboard", icon: <DashboardIcon />, text: "Dashboard" },
     { id: "seller-approvals", icon: <StoreIcon />, text: "Seller Approvals" },
+    { id: "seller-approved", icon: <StoreIcon />, text: "Approved Sellers" },
+    { id: "seller-all", icon: <StoreIcon />, text: "All sellers"},
     { id: "regional-orders", icon: <OrdersIcon />, text: "Regional Orders" },
     {
       id: "regional-customers",
@@ -309,41 +333,40 @@ function RegionalAdminDashboard() {
                 </TableHead>
                 <TableBody>
                   {pendingSellers.map((seller) => (
-                    <TableRow key={seller._id}> {/* Using _id for unique key */}
-                      <TableCell>{seller._id}</TableCell> {/* Display seller's ID */}
-                      <TableCell>{seller.name}</TableCell>
-                      <TableCell>{seller.e_mail}</TableCell> {/* Use e_mail field for email */}
-                      <TableCell>{`${seller.address.city}, ${seller.address.state}`}</TableCell> {/* Concatenate city and state for location */}
-                      <TableCell>{new Date(seller.created_at).toLocaleDateString()}</TableCell> {/* Display formatted application date */}
-                      <TableCell>
-                        <Chip
-                          label={seller.verification_status}
-                          size="small"
-                          sx={{
-                            backgroundColor:
-                              seller.verification_status === "pending" ? "#fff9c4" : "#e8f5e9",
-                            color: seller.verification_status === "pending" ? "#ff8f00" : "#2e7d32",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <IconButton
-                          color="primary"
-                          size="small"
-                          sx={{ mr: 1 }}
-                          onClick={() => handleApprove(seller._id)} // Use seller._id for approve action
-                        >
-                          <ApproveIcon />
-                        </IconButton>
-                        <IconButton
-                          color="error"
-                          size="small"
-                          onClick={() => handleReject(seller._id)} // Use seller._id for reject action
-                        >
-                          <RejectIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
+                    <TableRow key={seller.id}> {/* Use id not _id */}
+                    <TableCell>{seller.id}</TableCell>
+                    <TableCell>{seller.name}</TableCell>
+                    <TableCell>{seller.e_mail}</TableCell>
+                    <TableCell>{`${seller.address.city}, ${seller.address.state}`}</TableCell>
+                    <TableCell>{seller.created_at ? new Date(seller.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={seller.verification_status || 'pending'}
+                        size="small"
+                        sx={{
+                          backgroundColor: (seller.verification_status || 'pending') === "pending" ? "#fff9c4" : "#e8f5e9",
+                          color: (seller.verification_status || 'pending') === "pending" ? "#ff8f00" : "#2e7d32",
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        color="primary"
+                        size="small"
+                        sx={{ mr: 1 }}
+                        onClick={() => handleApprove(seller.id)}
+                      >
+                        <ApproveIcon />
+                      </IconButton>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        onClick={() => handleReject(seller.id)}
+                      >
+                        <RejectIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
                   ))}
                 </TableBody>
               </Table>

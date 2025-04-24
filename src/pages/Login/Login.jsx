@@ -36,14 +36,11 @@ const Login = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
-  const regions = ['Bihar', 'Odisha', 'West Bengal', 'Chhattisgarh'];
-
   useEffect(() => {
     // Check if user is already logged in
     const token = localStorage.getItem("token");
     if (token) {
-      const role = localStorage.getItem('role');
-      redirectBasedOnRole(role);
+      setIsLoggedIn(true);
     }
   }, []);
 
@@ -51,43 +48,6 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
-    try {
-      const response = await fetch("http://localhost:5000/api/auth/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Email check failed');
-      }
-
-      if (data.isRegistered) {
-        setAuthStep('login');
-      } else {
-        // Pre-fill email in registration form
-        setRegistrationData({
-          ...registrationData,
-          e_mail: email
-        });
-        setAuthStep('register');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to check email. Please try again.');
-    } finally {
-      setCheckingEmail(false);
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
 
     try {
       const response = await fetch("http://localhost:5000/api/auth/", {

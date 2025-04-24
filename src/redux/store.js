@@ -4,6 +4,7 @@ import { userApi } from './usersApi';
 import { regionalAdminApi } from './regionalAdminApi';
 import { ordersApi } from './ordersApi';
 import { cartApi } from './cartApi';
+import { sellerApi } from './sellerApi';
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +12,8 @@ export const store = configureStore({
     [userApi.reducerPath]: userApi.reducer,
     [regionalAdminApi.reducerPath]: regionalAdminApi.reducer,
     [ordersApi.reducerPath] : ordersApi.reducer,
-    [cartApi.reducerPath] : cartApi.reducer
+    [cartApi.reducerPath] : cartApi.reducer,
+    [sellerApi.reducerPath]: sellerApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -19,6 +21,7 @@ export const store = configureStore({
       userApi.middleware,
       regionalAdminApi.middleware,
       ordersApi.middleware,
-      cartApi.middleware
+      cartApi.middleware,
+      sellerApi.middleware
     ),
 });

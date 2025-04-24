@@ -41,7 +41,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         {/* uncomment below line */}
         <Route path="/login" element={<Login />} />
-        {/* <Route path="/login"  element={<Register />} /> */}
+        <Route path="/login2"  element={<Register />} />
         <Route path="/offers" element={<Offers />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/orders" element={<Orders />} />

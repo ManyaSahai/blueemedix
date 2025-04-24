@@ -1,600 +1,351 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  Tabs,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  Select,
-  MenuItem,
-  FormControl,
-  CircularProgress,
-  Divider,
-  Alert,
+    Box,
+    Container,
+    Typography,
+    Paper,
+    Tabs,
+    Tab,
+    CircularProgress,
+    Alert,
+    TableContainer,
+    Table,
+    TableRow,
+    TableCell,
+    TableBody,
+    TableHead,
+    Chip,
+    Button,
+    IconButton,
+    Menu,
+    MenuItem,
+    Avatar,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
-import { useGetUsersQuery } from "../../redux/usersApi";
+import { AccountCircle } from "@mui/icons-material";
+import { useSellerOrdersQuery, useOrderDetailsQuery, useUpdateOrderStatusMutation, useGetMeQuery } from "../../redux/sellerApi";
+import OrderDetails from "./OrderDetails";
+import RevenueOverview from "./RevenueOverview";
+import CustomerList from "./CustomerList";
+import Profile from "../../components/Profile/Profile"; // Import the Profile component
+import { useNavigate } from "react-router-dom";
 
 function SellerDashboard() {
-  const [activeTab, setActiveTab] = useState("orderStatus");
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState("orderStatus");
+    const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [orderDetailsMap, setOrderDetailsMap] = useState({});
+    const [error, setError] = useState(null);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [profileOpen, setProfileOpen] = useState(false);
+    const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const {
-    data: users,
-    isLoading: usersLoading,
-    error: usersError,
-  } = useGetUsersQuery();
+    const isMenuOpen = Boolean(anchorEl);
 
-  const [orders, setOrders] = useState([]);
-  const [complaints, setComplaints] = useState([]);
+    // Get seller ID from local storage
+    const sellerId = localStorage.getItem('userId');
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("https://fakestoreapi.com/products");
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
+    // Fetch orders for the seller
+    const {
+        data: sellerOrdersData,
+        isLoading: ordersLoading,
+        error: ordersError,
+        refetch: refetchOrders
+    } = useSellerOrdersQuery(sellerId);
+
+    // Fetch selected order details
+    const {
+        data: orderDetails,
+        isLoading: orderDetailsLoading,
+        error: orderDetailsError
+    } = useOrderDetailsQuery(selectedOrderId, { skip: !selectedOrderId });
+
+    // Mutation for updating order status
+    const [updateOrderStatus, { isLoading: updateStatusLoading }] = useUpdateOrderStatusMutation();
+
+    // Fetch user profile information
+    const { data: meData } = useGetMeQuery();
+
+    useEffect(() => {
+        if (sellerOrdersData?.orders) {
+            sellerOrdersData.orders.forEach(order => {
+                const orderId = typeof order === 'string' ? order : (order._id || order.id);
+
+                if (!orderDetailsMap[orderId]) {
+                    fetch(`http://localhost:5000/api/orders/${orderId}`, {
+                        headers: { 'Authorization': localStorage.getItem('authToken') || '' }
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success || data.order) {
+                                setOrderDetailsMap(prev => ({
+                                    ...prev,
+                                    [orderId]: data.order || data
+                                }));
+                            }
+                        })
+                        .catch(err => console.error(`Error fetching details for ${orderId}:`, err));
+                }
+            });
         }
-        const data = await response.json();
-        setProducts(data);
+    }, [sellerOrdersData, orderDetailsMap]);
 
-        if (users) {
-          generateSampleOrders(data);
-          generateSampleComplaints();
-        }
-
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
     };
 
-    fetchProducts();
-  }, [users]);
+    const handleViewOrderDetails = (orderId) => {
+        setSelectedOrderId(orderId);
+        setOrderDetailsOpen(true);
+    };
 
-  const generateSampleOrders = (productData) => {
-    if (!productData || productData.length === 0 || !users) return;
+    const handleCloseOrderDetails = () => {
+        setOrderDetailsOpen(false);
+    };
 
-    const statuses = [
-      "Accepted",
-      "Dispatched",
-      "Delivered",
-      "Rejected",
-      "Cancelled",
-    ];
+    const handleUpdateStatus = async (orderId, newStatus) => {
+        try {
+            const validStatuses = ['pending', 'accepted', 'dispatched', 'delivered', 'rejected', 'cancelled'];
 
-    const generatedOrders = productData.slice(0, 10).map((product, index) => {
-      const orderDate = new Date();
-      orderDate.setDate(orderDate.getDate() - Math.floor(Math.random() * 30));
+            if (!validStatuses.includes(newStatus)) {
+                setError(`Invalid status value: ${newStatus}. Status must be one of: ${validStatuses.join(', ')}`);
+                return;
+            }
 
-      const randomUser = users[Math.floor(Math.random() * users.length)];
+            await updateOrderStatus({
+                orderId,
+                status: newStatus,
+                description: `Order status updated to ${newStatus}`
+            }).unwrap();
 
-      return {
-        id: `ORD00${index + 1}`,
-        product: product.title,
-        productId: product.id,
-        customer: `${randomUser.name.firstname} ${randomUser.name.lastname}`,
-        customerId: randomUser.id,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        date: orderDate.toISOString().split("T")[0],
-        price: product.price,
-        quantity: Math.floor(Math.random() * 3) + 1,
-      };
-    });
-
-    setOrders(generatedOrders);
-  };
-
-  const generateSampleComplaints = () => {
-    if (!users) return;
-
-    const issues = [
-      "Wrong product",
-      "Damaged package",
-      "Late delivery",
-      "Product quality",
-      "Missing items",
-    ];
-    const statuses = ["isValid", "Not Valid"];
-    const resolutions = ["Replace", "Refund", "None"];
-
-    const generatedComplaints = Array(5)
-      .fill()
-      .map((_, index) => {
-        const orderNum = Math.floor(Math.random() * 10) + 1;
-
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-
-        return {
-          id: `COMP00${index + 1}`,
-          customer: `${randomUser.name.firstname} ${randomUser.name.lastname}`,
-          customerId: randomUser.id,
-          order: `ORD00${orderNum}`,
-          issue: issues[Math.floor(Math.random() * issues.length)],
-          status: statuses[Math.floor(Math.random() * statuses.length)],
-          resolution:
-            resolutions[Math.floor(Math.random() * resolutions.length)],
-          date: new Date(
-            Date.now() - Math.floor(Math.random() * 20) * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split("T")[0],
-        };
-      });
-
-    setComplaints(generatedComplaints);
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const calculateRevenue = () => {
-    return orders
-      .reduce((total, order) => {
-        if (order.status === "Delivered") {
-          return total + order.price * order.quantity;
+            refetchOrders();
+        } catch (err) {
+            console.error("Failed to update order status:", err);
+            setError("Failed to update order status. Please try again.");
         }
-        return total;
-      }, 0)
-      .toFixed(2);
-  };
+    };
 
-  const getAbandonedOrders = () => {
-    return orders.filter(
-      (order) => order.status === "Rejected" || order.status === "Cancelled"
-    );
-  };
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'delivered':
+                return '#4caf50';
+            case 'dispatched':
+                return '#2196f3';
+            case 'accepted':
+                return '#ff9800';
+            case 'rejected':
+            case 'cancelled':
+                return '#f44336';
+            default:
+                return '#9e9e9e';
+        }
+    };
 
-  const handleUpdateStatus = (orderId, newStatus) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
-  };
-
-  const renderContent = () => {
-    if (loading || usersLoading) {
-      return (
-        <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-          <CircularProgress />
-        </Box>
-      );
-    }
-
-    if (error || usersError) {
-      return (
-        <Alert severity="error" sx={{ m: 2 }}>
-          Error loading data: {error || usersError}
-        </Alert>
-      );
-    }
-
-    switch (activeTab) {
-      case "orderStatus":
-        return (
-          <TableContainer component={Paper} elevation={0}>
-            <Typography variant="h6" sx={{ p: 2 }}>
-              Order Status
-            </Typography>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableCell>Order ID</TableCell>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Product</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{order.product.substring(0, 30)}...</TableCell>
-                    <TableCell>{order.date}</TableCell>
-                    <TableCell>
-                      ${(order.price * order.quantity).toFixed(2)}
-                    </TableCell>
-                    <TableCell>{order.status}</TableCell>
-                    <TableCell>
-                      <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <Select
-                          value=""
-                          displayEmpty
-                          renderValue={() => "Update Status"}
-                          onChange={(e) =>
-                            handleUpdateStatus(order.id, e.target.value)
-                          }
-                        >
-                          <MenuItem value="Accepted">Accepted</MenuItem>
-                          <MenuItem value="Dispatched">Dispatched</MenuItem>
-                          <MenuItem value="Delivered">Delivered</MenuItem>
-                          <MenuItem value="Rejected">Rejected</MenuItem>
-                          <MenuItem value="Cancelled">Cancelled</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        );
-
-      case "placeOrder":
-        return (
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Place Order (Admin)
-            </Typography>
-            <Typography variant="body2" gutterBottom>
-              Select products from inventory to create a new order
-            </Typography>
-
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-              Available Products
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Product</TableCell>
-                    <TableCell>Category</TableCell>
-                    <TableCell>Price</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {products.slice(0, 5).map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>{product.id}</TableCell>
-                      <TableCell>{product.title.substring(0, 30)}...</TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell>${product.price.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          sx={{ backgroundColor: "#1e4c75" }}
-                        >
-                          Add to Order
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <Box sx={{ mt: 3 }}>
-              <Button variant="contained" sx={{ backgroundColor: "#1e4c75" }}>
-                Create New Order
-              </Button>
-            </Box>
-          </Paper>
-        );
-
-      case "customerRegister":
-        return (
-          <TableContainer component={Paper} elevation={0}>
-            <Typography variant="h6" sx={{ p: 2 }}>
-              Customer Registration
-            </Typography>
-            <Typography variant="body2" sx={{ px: 2, pb: 2 }}>
-              Manage your customers and their registration status
-            </Typography>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableCell>Customer ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Phone</TableCell>
-                  <TableCell>Address</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users &&
-                  users.map((user) => {
-                    const status = Math.random() > 0.3 ? "Active" : "New";
-                    return (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          CUST{user.id.toString().padStart(3, "0")}
-                        </TableCell>
-                        <TableCell>{`${user.name.firstname} ${user.name.lastname}`}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.phone}</TableCell>
-                        <TableCell>{`${user.address.city}, ${user.address.street}`}</TableCell>
-                        <TableCell>{status}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                {!users && (
-                  <TableRow>
-                    <TableCell colSpan={6}>Loading user data...</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        );
-
-      case "customerFeedback":
-        return (
-          <Box>
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Typography variant="h6">
-                Customer Feedback & Complaints
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                Manage customer feedback and address complaints
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: "bold", mb: 1 }}
-              >
-                Complaints
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                      <TableCell>Complaint ID</TableCell>
-                      <TableCell>Customer</TableCell>
-                      <TableCell>Order ID</TableCell>
-                      <TableCell>Issue</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Resolution</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {complaints.map((complaint) => (
-                      <TableRow key={complaint.id}>
-                        <TableCell>{complaint.id}</TableCell>
-                        <TableCell>{complaint.customer}</TableCell>
-                        <TableCell>{complaint.order}</TableCell>
-                        <TableCell>{complaint.issue}</TableCell>
-                        <TableCell>{complaint.date}</TableCell>
-                        <TableCell>{complaint.status}</TableCell>
-                        <TableCell>{complaint.resolution}</TableCell>
-                        <TableCell>
-                          <FormControl size="small" sx={{ minWidth: 150 }}>
-                            <Select
-                              value=""
-                              displayEmpty
-                              renderValue={() => "Actions"}
-                            >
-                              <MenuItem value="valid">Mark as Valid</MenuItem>
-                              <MenuItem value="invalid">
-                                Mark as Not Valid
-                              </MenuItem>
-                              <MenuItem value="replace">
-                                Provide Replacement
-                              </MenuItem>
-                              <MenuItem value="refund">Process Refund</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </Box>
-        );
-
-      case "revenue":
-        return (
-          <Box>
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Typography variant="h6">Revenue Overview</Typography>
-              <Typography variant="body2">
-                Track your revenue and financial performance
-              </Typography>
-
-              <Box sx={{ mt: 3, p: 2, bgcolor: "#f8f9fa", borderRadius: 1 }}>
-                <Typography
-                  variant="h4"
-                  sx={{ color: "#1e4c75", fontWeight: "bold" }}
-                >
-                  ${calculateRevenue()}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#666" }}>
-                  Total Revenue (Delivered Orders)
-                </Typography>
-              </Box>
-
-              <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-                <Box
-                  sx={{ p: 2, bgcolor: "#f0f7ff", borderRadius: 1, flex: 1 }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    {orders.filter((o) => o.status === "Delivered").length}
-                  </Typography>
-                  <Typography variant="body2">Completed Orders</Typography>
+    const renderContent = () => {
+        if (ordersLoading && activeTab === "orderStatus") {
+            return (
+                <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+                    <CircularProgress />
                 </Box>
-                <Box
-                  sx={{ p: 2, bgcolor: "#fff4e5", borderRadius: 1, flex: 1 }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    {orders.filter((o) => o.status === "Dispatched").length}
-                  </Typography>
-                  <Typography variant="body2">In Progress</Typography>
-                </Box>
-                <Box
-                  sx={{ p: 2, bgcolor: "#ffeef0", borderRadius: 1, flex: 1 }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    {getAbandonedOrders().length}
-                  </Typography>
-                  <Typography variant="body2">Abandoned Orders</Typography>
-                </Box>
-              </Box>
-            </Paper>
+            );
+        }
 
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Abandoned Orders
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Customer</TableCell>
-                      <TableCell>Product</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Value</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {getAbandonedOrders().length > 0 ? (
-                      getAbandonedOrders().map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell>{order.id}</TableCell>
-                          <TableCell>{order.customer}</TableCell>
-                          <TableCell>
-                            {order.product.substring(0, 20)}...
-                          </TableCell>
-                          <TableCell>{order.date}</TableCell>
-                          <TableCell>
-                            ${(order.price * order.quantity).toFixed(2)}
-                          </TableCell>
-                          <TableCell>{order.status}</TableCell>
-                          <TableCell>
-                            <Button size="small" variant="outlined">
-                              Send Reminder
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center">
-                          No abandoned orders found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </Box>
-        );
+        if (ordersError && activeTab === "orderStatus") {
+            return (
+                <Alert severity="error" sx={{ m: 2 }}>
+                    Error loading orders: {ordersError}
+                </Alert>
+            );
+        }
 
-      case "invoices":
-        return (
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">Invoices</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              View and manage all your invoices
-            </Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                    <TableCell>Invoice ID</TableCell>
-                    <TableCell>Order ID</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Amount</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {orders
-                    .filter((o) => o.status === "Delivered")
-                    .slice(0, 5)
-                    .map((order, index) => (
-                      <TableRow key={`inv-${order.id}`}>
-                        <TableCell>INV00{index + 1}</TableCell>
-                        <TableCell>{order.id}</TableCell>
-                        <TableCell>{order.customer}</TableCell>
-                        <TableCell>{order.date}</TableCell>
-                        <TableCell>
-                          ${(order.price * order.quantity).toFixed(2)}
-                        </TableCell>
-                        <TableCell>Paid</TableCell>
-                        <TableCell>
-                          <Button size="small" variant="outlined">
-                            View Invoice
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        );
+        switch (activeTab) {
+            case "orderStatus":
+                return (
+                    <TableContainer component={Paper} elevation={0}>
+                        <Typography variant="h6" sx={{ p: 2 }}>
+                            Order Status
+                        </Typography>
+                        <Table size={isMobile ? 'small' : 'medium'}>
+                            <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                                <TableRow>
+                                    <TableCell>Order ID</TableCell>
+                                    <TableCell>Date</TableCell>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell align="right">Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {sellerOrdersData?.orders && sellerOrdersData.orders.length > 0 ? (
+                                    sellerOrdersData.orders.map((order) => {
+                                        const isOrderObject = typeof order !== 'string' && order !== null && typeof order === 'object';
+                                        const orderId = isOrderObject ? (order._id || order.id) : order;
+                                        const orderDetails = orderDetailsMap[orderId];
 
-      default:
-        return <Typography>Select a tab</Typography>;
-    }
-  };
+                                        return (
+                                            <TableRow key={orderId}>
+                                                <TableCell>{orderId}</TableCell>
+                                                <TableCell>
+                                                    {isOrderObject && order.createdAt ? new Date(order.createdAt).toLocaleDateString() :
+                                                        isOrderObject && order.created_at ? new Date(order.created_at).toLocaleDateString() :
+                                                            orderDetails?.createdAt ? new Date(orderDetails.createdAt).toLocaleDateString() :
+                                                                orderDetails?.created_at ? new Date(orderDetails.created_at).toLocaleDateString() :
+                                                                    'N/A'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={isOrderObject ? (order.status || 'Unknown') :
+                                                            orderDetails ? (orderDetails.status || 'Unknown') : 'Unknown'}
+                                                        size="small"
+                                                        sx={{
+                                                            bgcolor: getStatusColor(isOrderObject ? order.status :
+                                                                orderDetails?.status || 'pending'),
+                                                            color: "white"
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{ mr: 1 }}
+                                                        onClick={() => handleViewOrderDetails(orderId)}
+                                                    >
+                                                        View Details
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={4} align="center">
+                                            No orders found
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                );
+            case "customers":
+                return <CustomerList sellerId={sellerId} />;
+            case "revenue":
+                return <RevenueOverview sellerOrders={sellerOrdersData?.orders} />;
+            default:
+                return <Typography>Select a tab</Typography>;
+        }
+    };
 
-  return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Box sx={{ p: 2, backgroundColor: "#1e4c75", color: "white" }}>
-        <Typography variant="h5">BlueMedix Seller Dashboard</Typography>
-      </Box>
+    const handleProfileMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
 
-      <Container maxWidth="xl" sx={{ mt: 3, flex: 1 }}>
-        <Paper sx={{ borderRadius: 1, overflow: "hidden" }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              bgcolor: "#f5f5f5",
-              "& .Mui-selected": { color: "#1e4c75" },
-              "& .MuiTabs-indicator": { backgroundColor: "#1e4c75" },
+    const handleProfileMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleProfileOpen = () => {
+        setProfileOpen(true);
+        handleProfileMenuClose();
+    };
+
+    const handleProfileClose = () => {
+        setProfileOpen(false);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('role');
+        navigate('/login'); // Redirect to login page
+    };
+
+    const menuId = 'primary-search-account-menu';
+    const renderMenu = (
+        <Menu
+            anchorEl={anchorEl}
+            anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
             }}
-          >
-            <Tab label="Order Status" value="orderStatus" />
-            <Tab label="Place Order" value="placeOrder" />
-            <Tab label="Customer Register" value="customerRegister" />
-            <Tab label="Customer Feedback" value="customerFeedback" />
-            <Tab label="Revenue" value="revenue" />
-            <Tab label="Invoices" value="invoices" />
-          </Tabs>
+            id={menuId}
+            keepMounted
+            transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+            }}
+            open={isMenuOpen}
+            onClose={handleProfileMenuClose}
+        >
+            <MenuItem onClick={handleProfileOpen}>Profile</MenuItem>
+            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+        </Menu>
+    );
 
-          <Box sx={{ p: 0 }}>{renderContent()}</Box>
-        </Paper>
-      </Container>
-    </Box>
-  );
+    return (
+        <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+            <Box sx={{ p: 2, backgroundColor: "#1e4c75", color: "white", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h5">BlueMedix Seller Dashboard</Typography>
+                <IconButton
+                    size="large"
+                    aria-label="account of current user"
+                    aria-controls={menuId}
+                    aria-haspopup="true"
+                    onClick={handleProfileMenuOpen}
+                    color="inherit"
+                >
+                    <Avatar sx={{ bgcolor: 'primary.light' }}>
+                        <AccountCircle />
+                    </Avatar>
+                </IconButton>
+            </Box>
+
+            <Container maxWidth="xl" sx={{ mt: 3, flexGrow: 1 }}>
+                <Paper sx={{ borderRadius: 1, overflow: "hidden" }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        variant="scrollable"
+                        scrollButtons="auto"
+                        sx={{
+                            borderBottom: 1,
+                            borderColor: "divider",
+                            bgcolor: "#f5f5f5",
+                            "& .Mui-selected": { color: "#1e4c75" },
+                            "& .MuiTabs-indicator": { backgroundColor: "#1e4c75" },
+                        }}
+                    >
+                        <Tab label="Order Status" value="orderStatus" />
+                        <Tab label="Customers" value="customers" />
+                        <Tab label="Revenue" value="revenue" />
+                    </Tabs>
+
+                    <Box sx={{ p: isMobile ? 2 : 3 }}>{renderContent()}</Box>
+                </Paper>
+            </Container>
+
+            {renderMenu}
+
+            {/* Order Details Dialog */}
+            <OrderDetails
+                open={orderDetailsOpen}
+                onClose={handleCloseOrderDetails}
+                orderDetails={orderDetails?.order}
+                loading={orderDetailsLoading}
+                error={orderDetailsError}
+                selectedOrderId={selectedOrderId}
+                updateStatusLoading={updateStatusLoading}
+                handleUpdateStatus={handleUpdateStatus}
+                getStatusColor={getStatusColor}
+            />
+
+            {/* Profile Dialog */}
+            <Profile open={profileOpen} onClose={handleProfileClose} userData={meData?.user} loading={!meData} error={meData?.error} />
+        </Box>
+    );
 }
 
 export default SellerDashboard;

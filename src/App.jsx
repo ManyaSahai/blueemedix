@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Theme from "./Theme";
 import Footer from "./components/Footer";
@@ -20,8 +20,8 @@ import Register from "./components/Register.jsx";
 import Sellers from "./components/SuperAdminDashboard/Sellers.jsx";
 import Cart from "./components/Cart.jsx";
 import Orders from "./components/Orders.jsx";
-import './index.css';
-
+import Profile from "./components/Profile/Profile.jsx"; // Import the new ProfilePage component
+import "./index.css";
 
 function App() {
   const location = useLocation();
@@ -41,18 +41,23 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         {/* uncomment below line */}
         <Route path="/login" element={<Login />} />
-        <Route path="/login2"  element={<Register />} />
+        <Route path="/login2" element={<Register />} />
         <Route path="/offers" element={<Offers />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/orders" element={<Orders />} />
+        {/* Seller routes */}
         <Route path="/seller" element={<SellerDashboard />} />
+        <Route path="/seller/profile" element={<Profile />} />{" "}
+        {/* Add this new route for the profile page */}
         <Route path="/regional-admin" element={<RegionalAdmin />} />
-
-        <Route path="/superadmin/*" element={
-          <ProtectedRoute allowedRoles={['SuperAdmin']}>
-          <SuperAdminDashboard />
-          </ProtectedRoute>
-          }>
+        <Route
+          path="/superadmin/*"
+          element={
+            <ProtectedRoute allowedRoles={["SuperAdmin"]}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="products" replace />} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />

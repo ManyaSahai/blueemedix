@@ -1,4 +1,3 @@
-// src/features/api/regionalAdminApiSlice.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // Utility function to get token from localStorage
@@ -7,23 +6,23 @@ const getAuthToken = () => localStorage.getItem('token');
 export const regionalAdminApi = createApi({
   reducerPath: 'regionalAdminApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:5000/api/regional-admin',
+    baseUrl: 'http://localhost:5000/api/regional-admin', // Base URL for regional admin specific endpoints
     prepareHeaders: (headers, { getState }) => {
       const token = getAuthToken();
-      console.log('Token being used:', token);
-      
       if (token) {
-        // Make sure there's a space between "Bearer" and the token
-        headers.set('Authorization', ` ${token}`);
-        console.log('Authorization header set:', `${token}`);
+        headers.set('Authorization', `${token}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Seller'],
+  tagTypes: ['Seller', 'User', 'Order'], // Add 'Order' as a tag type
   endpoints: (builder) => ({
     fetchPendingSellers: builder.query({
       query: () => '/sellers/pending',
+      providesTags: ['Seller'],
+    }),
+    fetchAllRegionalSellers: builder.query({
+      query: () => '/sellers/all',
       providesTags: ['Seller'],
     }),
     fetchApprovedSellers: builder.query({
@@ -44,12 +43,28 @@ export const regionalAdminApi = createApi({
       }),
       invalidatesTags: ['Seller'],
     }),
+    fetchRegionalUsers: builder.query({
+      query: (regAdminId) => `/auth/regAdmin/customer/${regAdminId}`, // Corrected path
+      providesTags: ['User'],
+    }),
+    fetchRegionalOrders: builder.query({
+      query: (region) => ({
+        url: `/regAdmin`,  // No :region in URL
+        method: 'GET',
+        params: { region },
+      }),
+      transformResponse: (response) => response.orders,
+      providesTags: ['Order'],
+    }),
   }),
 });
 
 export const {
   useFetchPendingSellersQuery,
+  useFetchAllRegionalSellersQuery,
   useFetchApprovedSellersQuery,
   useApproveSellerMutation,
   useRejectSellerMutation,
+  useFetchRegionalUsersQuery,
+  useFetchRegionalOrdersQuery,
 } = regionalAdminApi;

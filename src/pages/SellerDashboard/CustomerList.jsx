@@ -157,7 +157,7 @@ function CustomerList({ sellerId }) {
                     `http://localhost:5000/api/userData/seller/${sellerId}`,
                     {
                         headers: {
-                            Authorization: localStorage.getItem("authToken") || "",
+                            Authorization: localStorage.getItem("token") || "",
                         },
                     }
                 );

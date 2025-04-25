@@ -118,6 +118,7 @@ const Login = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.user.id);
       localStorage.setItem("role", data.user.role);
+      localStorage.setItem("region", data.user.region);
       if (data.refreshToken) {
         localStorage.setItem("refreshToken", data.refreshToken);
       }

@@ -22,13 +22,19 @@ import Cart from "./components/Cart.jsx";
 import Orders from "./components/Orders.jsx";
 import Profile from "./components/Profile/Profile.jsx"; // Import the new ProfilePage component
 import "./index.css";
+import SuperAdmin from "./pages/Super/SuperAdmin.jsx";
+import { getDashboardData, getOrders } from './redux/SuperAdmin/api.js';
+import store from './redux/SuperAdmin/store.js';
 
+store.dispatch(getDashboardData());
+store.dispatch(getOrders());
 function App() {
   const location = useLocation();
   const hideNavbar =
     location.pathname.startsWith("/superadmin") ||
     location.pathname.startsWith("/seller") ||
-    location.pathname.startsWith("/regional-admin");
+    location.pathname.startsWith("/regional-admin")||
+    location.pathname.startsWith("/admin");
 
   return (
     <Theme>
@@ -50,6 +56,7 @@ function App() {
         <Route path="/seller/profile" element={<Profile />} />{" "}
         {/* Add this new route for the profile page */}
         <Route path="/regional-admin" element={<RegionalAdmin />} />
+        <Route path="/admin" element={<SuperAdmin />} />
         <Route
           path="/superadmin/*"
           element={
@@ -58,11 +65,13 @@ function App() {
             </ProtectedRoute>
           }
         >
+          
           <Route index element={<Navigate to="products" replace />} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />
           <Route path="reports" element={<Reports />} />
           <Route path="sellers" element={<Sellers />} />
+          <Route path="admin" element={<SuperAdmin />} />
         </Route>
       </Routes>
 

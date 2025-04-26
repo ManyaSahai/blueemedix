@@ -17,7 +17,6 @@ import MapIcon from '@mui/icons-material/Map';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StoreIcon from '@mui/icons-material/Store';
 import StarIcon from '@mui/icons-material/Star';
-
 export default function Header(){
 
     const [open, setOpen] = React.useState(false);
@@ -100,6 +99,7 @@ export default function Header(){
         <Drawer open={open} onClose={toggleDrawer(false)}>
             {DrawerList}
         </Drawer>
+        
     </div>
     );
 }

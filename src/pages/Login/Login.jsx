@@ -72,7 +72,7 @@ const Login = () => {
   // Keep this helper for initial check and login flow
   const redirectBasedOnRole = (role) => {
     if (role === "SuperAdmin") {
-      navigate("/superadmin/products");
+      navigate("/regionalAdmin/products");
     } else if (role === "RegionalAdmin") {
       navigate("/regional-admin");
     } else if (role === "Seller") {

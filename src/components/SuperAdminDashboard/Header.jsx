@@ -44,7 +44,7 @@ export default function Header(){
       {
         label: "Regional admin",
         icon: MapIcon,
-        path: "regional-admin"
+        path: "regionalAdmin"
       },
       {
         label: "Reports",

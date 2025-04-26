@@ -22,11 +22,12 @@ import Cart from "./components/Cart.jsx";
 import Orders from "./components/Orders.jsx";
 import Profile from "./components/Profile/Profile.jsx"; // Import the new ProfilePage component
 import "./index.css";
+import RegionalAdminList from "./components/SuperAdminDashboard/RegionalAdminList.jsx";
 
 function App() {
   const location = useLocation();
   const hideNavbar =
-    location.pathname.startsWith("/superadmin") ||
+    location.pathname.startsWith("/regionalAdmin") ||
     location.pathname.startsWith("/seller") ||
     location.pathname.startsWith("/regional-admin");
 
@@ -51,7 +52,7 @@ function App() {
         {/* Add this new route for the profile page */}
         <Route path="/regional-admin" element={<RegionalAdmin />} />
         <Route
-          path="/superadmin/*"
+          path="/regionalAdmin/*"
           element={
             <ProtectedRoute allowedRoles={["SuperAdmin"]}>
               <SuperAdminDashboard />
@@ -63,6 +64,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="reports" element={<Reports />} />
           <Route path="sellers" element={<Sellers />} />
+          <Route path="regional-admins" element={<RegionalAdminList/>} />
         </Route>
       </Routes>
 

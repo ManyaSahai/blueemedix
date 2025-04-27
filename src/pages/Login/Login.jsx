@@ -45,6 +45,7 @@ const Login = () => {
   const [successMessage, setSuccessMessage] = useState(""); // New state for success messages
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Keep for checking existing login
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const customerAddress = {};
 
   const [registrationData, setRegistrationData] = useState({
     name: "",
@@ -77,8 +78,10 @@ const Login = () => {
       navigate("/regional-admin");
     } else if (role === "Seller") {
       navigate("/seller");
-    } else {
+    } else if(role === "Customer"){
       navigate("/"); // Customer default
+    }else{
+      alert("Error logging in")
     }
   };
 
@@ -110,6 +113,7 @@ const Login = () => {
       });
 
       const data = await response.json();
+      // console.log("data", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
@@ -117,8 +121,12 @@ const Login = () => {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.user.id);
+      localStorage.setItem("name", data.user.name);
+      localStorage.setItem("email", data.user.e_mail);
+      localStorage.setItem("number", data.user.phone_no);
       localStorage.setItem("role", data.user.role);
       localStorage.setItem("region", data.user.region);
+      localStorage.setItem("customerAddress", JSON.stringify(data.user.address));
       if (data.refreshToken) {
         localStorage.setItem("refreshToken", data.refreshToken);
       }

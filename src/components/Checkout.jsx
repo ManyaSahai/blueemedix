@@ -23,10 +23,30 @@ import {
 } from "@mui/material";
 
 const steps = ["Shipping Information", "Payment Method", "Review Order"];
+const storedAddress = JSON.parse(localStorage.getItem("customerAddress"));
+const name = localStorage.getItem("name");
+const e_mail = localStorage.getItem("email");
+const phone_no = localStorage.getItem("number");
+
 
 const CheckoutPage = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [upiId, setUpiId] = useState("");
+  const [upiError, setUpiError] = useState("");
+  const [address, setAddress] = useState({
+    first_line: storedAddress?.first_line || "",
+    second_line: storedAddress?.second_line || "",
+    city: storedAddress?.city || "",
+    state: storedAddress?.state || "",
+    pin_code: storedAddress?.pin_code || ""
+  });
+  const [user, setUser] = useState({
+    name: name || "",
+    e_mail: e_mail || "",
+    phone_no: phone_no || ""
+  });
+
 
   // Cart items from your page
   const cartItems = [
@@ -54,20 +74,40 @@ const CheckoutPage = () => {
     setPaymentMethod(event.target.value);
   };
 
+  const validateUpiId = (value) => {
+    if (!value.trim()) {
+      return "UPI ID is required";
+    } else if (!value.includes("@")) {
+      return "Enter a valid UPI ID (must contain @)";
+    } else {
+      return ""; // No error
+    }
+  };
+  const handleUpiIdChange = (e) => {
+    const value = e.target.value;
+    setUpiId(value);
+
+    const error = validateUpiId(value);
+    setUpiError(error);
+  };
+
   const renderShippingForm = () => (
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6}>
-        <TextField
-          required
-          id="firstName"
-          name="firstName"
-          label="First Name"
-          fullWidth
-          autoComplete="given-name"
-          variant="outlined"
-        />
+      <TextField
+        required
+        id="name"
+        name="name"
+        label="Name"
+        fullWidth
+        autoComplete="given-name"
+        variant="outlined"
+        value={user.name}  // Bind the value to the user.name state
+        onChange={(e) => setUser((prev) => ({ ...prev, name: e.target.value }))}  // Update state when the user types
+      />
+
       </Grid>
-      <Grid item xs={12} sm={6}>
+      {/* <Grid item xs={12} sm={6}>
         <TextField
           required
           id="lastName"
@@ -77,7 +117,7 @@ const CheckoutPage = () => {
           autoComplete="family-name"
           variant="outlined"
         />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12}>
         <TextField
           required
@@ -85,6 +125,8 @@ const CheckoutPage = () => {
           name="email"
           label="Email Address"
           fullWidth
+          value={user.e_mail}
+          onChange={(e)=> setUser((prev) => ({...prev, e_mail: e.target.value}))}
           autoComplete="email"
           variant="outlined"
         />
@@ -95,6 +137,8 @@ const CheckoutPage = () => {
           id="address1"
           name="address1"
           label="Address Line 1"
+          value={address.first_line}
+          onChange={(e) => setAddress(prev => ({ ...prev, first_line: e.target.value }))}
           fullWidth
           autoComplete="shipping address-line1"
           variant="outlined"
@@ -106,6 +150,8 @@ const CheckoutPage = () => {
           name="address2"
           label="Address Line 2"
           fullWidth
+          value={address.second_line}
+          onChange={(e) => setAddress(prev => ({ ...prev, second_line: e.target.value }))}
           autoComplete="shipping address-line2"
           variant="outlined"
         />
@@ -116,6 +162,8 @@ const CheckoutPage = () => {
           id="city"
           name="city"
           label="City"
+          value={address.city}
+          onChange={(e) => setAddress(prev => ({ ...prev, city: e.target.value }))}
           fullWidth
           autoComplete="shipping address-level2"
           variant="outlined"
@@ -127,6 +175,8 @@ const CheckoutPage = () => {
           id="state"
           name="state"
           label="State/Province/Region"
+          value={address.state}
+          onChange={(e) => setAddress(prev => ({ ...prev, state: e.target.value }))}
           fullWidth
           variant="outlined"
         />
@@ -137,6 +187,8 @@ const CheckoutPage = () => {
           id="zip"
           name="zip"
           label="Zip / Postal code"
+          value={address.pin_code}
+          onChange={(e) => setAddress(prev => ({ ...prev, pin_code: e.target.value }))}
           fullWidth
           autoComplete="shipping postal-code"
           variant="outlined"
@@ -165,6 +217,8 @@ const CheckoutPage = () => {
           name="phone"
           label="Phone Number"
           fullWidth
+          value={user.phone_no}
+          onChange={(e)=> setUser((prev) => ({...prev, phone_no: e.target.value}))}
           autoComplete="tel"
           variant="outlined"
         />
@@ -185,29 +239,14 @@ const CheckoutPage = () => {
           onChange={handlePaymentMethodChange}
         >
           <FormControlLabel
-            value="card"
-            control={<Radio />}
-            label="Credit/Debit Card"
-          />
-          <FormControlLabel
             value="upi"
             control={<Radio />}
             label="UPI Payment"
           />
-          <FormControlLabel
-            value="cod"
-            control={<Radio />}
-            label="Cash on Delivery"
-          />
-          <FormControlLabel
-            value="netbanking"
-            control={<Radio />}
-            label="Net Banking"
-          />
         </RadioGroup>
       </Grid>
 
-      {paymentMethod === "card" && (
+      {/*{paymentMethod === "card" && (
         <>
           <Grid item xs={12}>
             <TextField
@@ -251,7 +290,7 @@ const CheckoutPage = () => {
             />
           </Grid>
         </>
-      )}
+      )}*/}
 
       {paymentMethod === "upi" && (
         <Grid item xs={12}>
@@ -262,11 +301,15 @@ const CheckoutPage = () => {
             placeholder="username@bankname"
             fullWidth
             variant="outlined"
+            value={upiId}
+            onChange={handleUpiIdChange}
+            error={Boolean(upiError)}
+            helperText={upiError}
           />
         </Grid>
       )}
 
-      {paymentMethod === "netbanking" && (
+      {/* {paymentMethod === "netbanking" && (
         <Grid item xs={12}>
           <FormControl fullWidth>
             <InputLabel id="bank-select-label">Select Bank</InputLabel>
@@ -283,7 +326,7 @@ const CheckoutPage = () => {
             </Select>
           </FormControl>
         </Grid>
-      )}
+      )} */}
     </Grid>
   );
 
@@ -340,15 +383,15 @@ const CheckoutPage = () => {
             Shipping Address
           </Typography>
           <Typography variant="body2">
-            John Doe
+            {user.name}
             <br />
-            123 Example Street
+            {address.first_line}, {address.second_line}
             <br />
-            Mumbai, Maharashtra 400001
+            {address.city}, {address.state} {address.pin_code}
             <br />
             India
             <br />
-            +91 9876543210
+            {user.phone_no}
           </Typography>
         </Paper>
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -357,7 +400,7 @@ const CheckoutPage = () => {
           </Typography>
           <Typography variant="body2">
             {paymentMethod === "card" && "Credit/Debit Card ending in 1234"}
-            {paymentMethod === "upi" && "UPI Payment (username@bankname)"}
+            {paymentMethod === "upi" && `UPI Payment ${upiId}`}
             {paymentMethod === "cod" && "Cash on Delivery"}
             {paymentMethod === "netbanking" && "Net Banking (SBI)"}
           </Typography>

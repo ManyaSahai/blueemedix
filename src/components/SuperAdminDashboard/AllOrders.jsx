@@ -10,34 +10,32 @@ import {
     CircularProgress,
     Typography,
     Alert,
-    Chip,
     Box,
     IconButton,
-    Tooltip,
+    Tooltip
 } from '@mui/material';
 import {
     Person,
     Email,
     Phone,
-    LocationOn,
-    Pin,
+    ShoppingCart,
     CheckCircle,
     Cancel,
     HourglassEmpty,
-    ArrowUpward, // For sorting
+    ArrowUpward,
     ArrowDownward,
+    CalendarMonth
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
-// Styled Components for better UI
 const StyledPaper = styled(Paper)(({ theme }) => ({
     width: '100%',
     marginTop: theme.spacing(3),
     overflowX: 'auto',
-    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)', // Add shadow for depth
-    paddingLeft: theme.spacing(2), // Add left padding
-    paddingRight: theme.spacing(2), // Add right padding
+    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
 }));
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -55,55 +53,58 @@ const StyledTableHeadCell = styled(TableCell)(({ theme }) => ({
     borderBottom: '2px solid #ccc',
 }));
 
-const getVerificationColor = (status) => {
+const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
-        case 'approved':
-            return { color: 'success', icon: CheckCircle };
         case 'pending':
-            return { color: 'warning', icon: HourglassEmpty };
+            return <HourglassEmpty color="warning" fontSize="small" />;
+        case 'shipped':
+            return <ShoppingCart color="info" fontSize="small" />;
+        case 'delivered':
+            return <CheckCircle color="success" fontSize="small" />;
+        case 'cancelled':
         case 'rejected':
-            return { color: 'error', icon: Cancel };
+            return <Cancel color="error" fontSize="small" />;
         default:
-            return { color: 'default', icon: HourglassEmpty };
+            return <HourglassEmpty color="default" fontSize="small" />;
     }
 };
 
-const Sellers = () => {
-    const [sellers, setSellers] = useState([]);
+const AllOrders = () => {
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    const [totalSellers, setTotalSellers] = useState(0);
-    const [sortBy, setSortBy] = useState('name');
-    const [sortOrder, setSortOrder] = useState('asc');
-    const [currentPageData, setCurrentPageData] = useState([]); // Add this line
+    const [totalOrders, setTotalOrders] = useState(0);
+    const [sortBy, setSortBy] = useState('createdAt'); // Default sort by creation date
+    const [sortOrder, setSortOrder] = useState('desc'); // Default sort order: descending
+    const [currentPageData, setCurrentPageData] = useState([]);
 
-    const fetchSellers = useCallback(async (currentPage, perPage, sortField, order) => {
+    const fetchOrders = useCallback(async (currentPage, perPage, sortField, order) => {
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token'); // Assuming you have a token
             const response = await fetch(
-                `http://localhost:5000/api/superAdmin/sellers?page=${currentPage + 1}&limit=${perPage}&sortBy=${sortField}&order=${order}`,
+                `http://localhost:5000/api/orders?page=${currentPage + 1}&limit=${perPage}&sortBy=${sortField}&order=${order}`,
                 {
                     headers: {
-                        Authorization: `${token}`,
+                        Authorization: `${token}`, // Include the token
                     },
                 }
             );
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch sellers');
+                throw new Error(errorData.message || 'Failed to fetch orders');
             }
 
             const data = await response.json();
             if (data.success) {
-                setSellers(data.sellers);
-                setTotalSellers(data.count);
+                setOrders(data.orders);
+                setTotalOrders(data.count);
             } else {
-                throw new Error('Failed to fetch sellers: Invalid response format');
+                throw new Error('Failed to fetch orders: Invalid response format');
             }
         } catch (err) {
             setError(err.message);
@@ -113,16 +114,16 @@ const Sellers = () => {
     }, []);
 
     useEffect(() => {
-        fetchSellers(page, rowsPerPage, sortBy, sortOrder);
-    }, [fetchSellers, page, rowsPerPage, sortBy, sortOrder]);
+        fetchOrders(page, rowsPerPage, sortBy, sortOrder);
+    }, [fetchOrders, page, rowsPerPage, sortBy, sortOrder]);
 
-      useEffect(() => {
+    useEffect(() => {
         // Calculate the data for the current page
         const start = page * rowsPerPage;
         const end = start + rowsPerPage;
-        const currentData = sellers.slice(start, end);
+        const currentData = orders.slice(start, end);
         setCurrentPageData(currentData);
-    }, [sellers, page, rowsPerPage]);
+    }, [orders, page, rowsPerPage]);
 
     const handleChangePage = (_event, newPage) => {
         setPage(newPage);
@@ -160,7 +161,7 @@ const Sellers = () => {
     if (error) {
         return (
             <Alert severity="error">
-                Error fetching sellers: {error}
+                Error fetching orders: {error}
             </Alert>
         );
     }
@@ -173,97 +174,78 @@ const Sellers = () => {
                         <StyledTableHeadCell>S.No</StyledTableHeadCell>
                         <StyledTableHeadCell>
                             <Box display="flex" alignItems="center" gap={1}>
-                                Name
-                                <IconButton onClick={() => handleSort('name')} size="small">
-                                    {getSortIcon('name')}
+                                Customer Name
+                                <IconButton onClick={() => handleSort('customer.name')} size="small">
+                                    {getSortIcon('customer.name')}
                                 </IconButton>
                             </Box>
                         </StyledTableHeadCell>
+                        <StyledTableHeadCell>Customer Email</StyledTableHeadCell>
+                        <StyledTableHeadCell>Customer Phone</StyledTableHeadCell>
+                        <StyledTableHeadCell>Seller Name</StyledTableHeadCell>
                         <StyledTableHeadCell>
                             <Box display="flex" alignItems="center" gap={1}>
-                                Email
-                                <IconButton onClick={() => handleSort('e_mail')} size="small">
-                                    {getSortIcon('e_mail')}
+                                Total Amount
+                                <IconButton onClick={() => handleSort('totalAmount')} size="small">
+                                    {getSortIcon('totalAmount')}
                                 </IconButton>
                             </Box>
                         </StyledTableHeadCell>
+                        <StyledTableHeadCell>Order Status</StyledTableHeadCell>
+                        <StyledTableHeadCell>Payment Status</StyledTableHeadCell>
                         <StyledTableHeadCell>
                             <Box display="flex" alignItems="center" gap={1}>
-                                Phone
-                                <IconButton onClick={() => handleSort('phone_no')} size="small">
-                                    {getSortIcon('phone_no')}
+                                Order Date
+                                <IconButton onClick={() => handleSort('createdAt')} size="small">
+                                    {getSortIcon('createdAt')}
                                 </IconButton>
                             </Box>
                         </StyledTableHeadCell>
-                        <StyledTableHeadCell>
-                            <Box display="flex" alignItems="center" gap={1}>
-                                Region
-                                <IconButton onClick={() => handleSort('region')} size="small">
-                                    {getSortIcon('region')}
-                                </IconButton>
-                            </Box>
-                        </StyledTableHeadCell>
-                        <StyledTableHeadCell>
-                            <Box display="flex" alignItems="center" gap={1}>
-                                Pincode
-                                <IconButton onClick={() => handleSort('address.pin_code')} size="small">
-                                    {getSortIcon('address.pin_code')}
-                                </IconButton>
-                            </Box>
-                        </StyledTableHeadCell>
-                        <StyledTableHeadCell>Verification Status</StyledTableHeadCell>
-                        <StyledTableHeadCell>Registered On</StyledTableHeadCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {currentPageData.map((seller, index) => {
-                        const verification = getVerificationColor(seller.verification_status);
+                    {currentPageData.map((order, index) => {
+                        const orderDate = new Date(order.createdAt);
+                        const formattedDate = isValid(orderDate)
+                            ? format(orderDate, 'dd-MM-yyyy')
+                            : 'Invalid Date';
+
                         return (
-                            <TableRow key={seller._id}>
+                            <TableRow key={order._id}>
                                 <StyledTableCell>{(page * rowsPerPage) + index + 1}</StyledTableCell>
                                 <StyledTableCell>
                                     <Box display="flex" alignItems="center" gap={1}>
                                         <Person fontSize="small" color="primary" />
-                                        <Typography>{seller.name}</Typography>
+                                        <Typography>{order.customer?.name || 'N/A'}</Typography>
                                     </Box>
                                 </StyledTableCell>
                                 <StyledTableCell>
                                     <Box display="flex" alignItems="center" gap={1}>
                                         <Email fontSize="small" color="secondary" />
-                                        <Typography>{seller.e_mail}</Typography>
+                                        <Typography>{order.customer?.e_mail || 'N/A'}</Typography>
                                     </Box>
                                 </StyledTableCell>
                                 <StyledTableCell>
                                     <Box display="flex" alignItems="center" gap={1}>
-                                        <Phone fontSize="small" color="action" />
-                                        <Typography>{seller.phone_no}</Typography>
+                                        <Phone fontSize="small" color="info" />
+                                        <Typography>{order.customer?.phone_no || 'N/A'}</Typography>
                                     </Box>
                                 </StyledTableCell>
+                                <StyledTableCell>{order.seller?.name || 'N/A'}</StyledTableCell>
+                                <StyledTableCell>{order.totalAmount}</StyledTableCell>
                                 <StyledTableCell>
                                     <Box display="flex" alignItems="center" gap={1}>
-                                        <LocationOn fontSize="small" color="info" />
-                                        <Typography>{seller.region}</Typography>
+                                        {getStatusIcon(order.status)}
+                                        <Typography>{order.status}</Typography>
                                     </Box>
+
                                 </StyledTableCell>
+                                <StyledTableCell>{order.payment_status}</StyledTableCell>
                                 <StyledTableCell>
                                     <Box display="flex" alignItems="center" gap={1}>
-                                        <Pin fontSize="small" color="warning" />
-                                        <Typography>{seller.address?.pin_code}</Typography>
+                                        <CalendarMonth fontSize="small" color="action" />
+                                        <Typography>{formattedDate}</Typography>
                                     </Box>
-                                </StyledTableCell>
-                                <StyledTableCell>
-                                    <Tooltip title={seller.verification_status || "Not Verified"}>
-                                        <Chip
-                                            icon={<verification.icon color="inherit" fontSize="small" />}
-                                            label={seller.verification_status || "Not Verified"}
-                                            color={verification.color}
-                                            size="small"
-                                            variant="outlined"
-                                        />
-                                    </Tooltip>
-                                </StyledTableCell>
-                                <StyledTableCell>
-                                    {format(new Date(seller.created_at), 'PPPppp')}
                                 </StyledTableCell>
                             </TableRow>
                         );
@@ -272,7 +254,7 @@ const Sellers = () => {
             </Table>
             <TablePagination
                 component="div"
-                count={totalSellers}
+                count={totalOrders}
                 page={page}
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}
@@ -283,4 +265,4 @@ const Sellers = () => {
     );
 };
 
-export default Sellers;
+export default AllOrders;

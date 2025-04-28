@@ -302,9 +302,12 @@ function SellerDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("role");
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('name')
+    localStorage.removeItem('number')
+    localStorage.removeItem('region')
+    localStorage.removeItem('role')
     navigate("/login"); // Redirect to login page
   };
 

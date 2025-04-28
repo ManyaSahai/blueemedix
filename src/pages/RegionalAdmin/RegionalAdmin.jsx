@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -37,6 +38,7 @@ import OrderManagement from "./OrderManagement"; // Import the new OrderManageme
 import { useFetchAllRegionalSellersQuery } from "../../redux/regionalAdminApi";
 
 function RegionalAdminDashboard() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(true);
   const [activeMenu, setActiveMenu] = useState("sellers");
   const [anchorEl, setAnchorEl] = useState(null);
@@ -61,12 +63,33 @@ function RegionalAdminDashboard() {
     setAnchorEl(null);
   };
 
+
+
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") {
       return;
     }
     setSnackbarOpen(false);
   };
+
+  const handleLogout = () => {
+    // Clear localStorage items
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('name')
+    localStorage.removeItem('number')
+    localStorage.removeItem('region')
+    localStorage.removeItem('role')
+    // Add any other keys you might be storing
+
+    // Navigate to the login page or any other appropriate route
+    navigate('/login');
+  };
+
+  const handleProfileNavigation = () => {
+    navigate('/regional-admin/profile'); // Assuming '/profile' is your Profile component's route
+  };
+
 
   const handleShowSnackbar = (message, severity = "success") => {
     setSnackbarMessage(message);
@@ -262,9 +285,8 @@ function RegionalAdminDashboard() {
                 open={Boolean(anchorEl)}
                 onClose={handleUserMenuClose}
               >
-                <MenuItem onClick={handleUserMenuClose}>Profile</MenuItem>
-                <MenuItem onClick={handleUserMenuClose}>Settings</MenuItem>
-                <MenuItem onClick={handleUserMenuClose}>Logout</MenuItem>
+                  <MenuItem onClick={handleProfileNavigation}>Profile</MenuItem>
+                  <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
             </Box>
           </Toolbar>

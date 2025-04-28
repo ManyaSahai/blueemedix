@@ -1,16 +1,16 @@
 // src/api/regionalAdminsApi.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import getBaseUrl from '../utils/baseUrl'; // Correct path
+import getBaseUrl from '../utils/baseURL'; // Correct path
 import { storeInIndexedDB, getFromIndexedDB } from '../utils/regionalSuperAdminCache';
 
 export const regionalAdminsApi = createApi({
   reducerPath: 'regionalAdminsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${getBaseUrl()}/regionalAdmin/regional-admins`, // Added the specific path here
+    baseUrl: 'http://localhost:5000/api/superAdmin', // Added the specific path here
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth?.token || localStorage.getItem('token');
       if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+        headers.set('Authorization', ` ${token}`);
       }
       return headers;
     },
@@ -25,7 +25,7 @@ export const regionalAdminsApi = createApi({
           const cached = await getFromIndexedDB('regionalAdmins');
           if (cached) return { data: cached };
 
-          const res = await fetchWithBQ('/'); // Get all regional admins
+          const res = await fetchWithBQ('/regional-admins'); // For getting all admins
           if (res.error) return { error: res.error };
 
           await storeInIndexedDB('regionalAdmins', res.data.admins);
@@ -44,7 +44,7 @@ export const regionalAdminsApi = createApi({
           const cached = await getFromIndexedDB('pending');
           if (cached) return { data: cached };
 
-          const res = await fetchWithBQ('/pending'); // Use `/pending` here as part of the route
+          const res = await fetchWithBQ('/regional-admins/pending'); // Use `/pending` here as part of the route
           if (res.error) return { error: res.error };
 
           await storeInIndexedDB('pending', res.data.pendingAdmins);
@@ -56,19 +56,17 @@ export const regionalAdminsApi = createApi({
       providesTags: ['RegionalAdmins'],
     }),
 
-    // Approve an admin
     approveAdmin: builder.mutation({
       query: (adminId) => ({
-        url: `/${adminId}/approve`, // Add `/approve` after the adminId
+        url: `/regional-admins/${adminId}/approve`,
         method: 'PUT',
       }),
       invalidatesTags: ['RegionalAdmins'],
     }),
-
-    // Decline an admin
+    
     declineAdmin: builder.mutation({
       query: ({ adminId, reason }) => ({
-        url: `/${adminId}/decline`, // Add `/decline` after the adminId
+        url: `/regional-admins/${adminId}/decline`,
         method: 'PUT',
         body: { reason },
       }),

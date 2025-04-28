@@ -26,6 +26,8 @@ import RegionalAdminList from "./components/SuperAdminDashboard/RegionalAdminLis
 import SuperAdmin from "./pages/Super/SuperAdmin.jsx";
 import { getDashboardData, getOrders } from './redux/SuperAdmin/api.js';
 import store from './redux/SuperAdmin/store.js';
+import AllOrders from "./components/SuperAdminDashboard/AllOrders.jsx";
+import Dashboard from "./pages/Super/Dashboard.jsx";
 
 store.dispatch(getDashboardData());
 store.dispatch(getOrders());
@@ -55,11 +57,12 @@ function App() {
         {/* Seller routes */}
         <Route path="/seller" element={<SellerDashboard />} />
         <Route path="/seller/profile" element={<Profile />} />{" "}
+        <Route path="/regional-admin/profile" element={<Profile />} />{" "}
         {/* Add this new route for the profile page */}
         <Route path="/regional-admin" element={<RegionalAdmin />} />
-        <Route path="/admin" element={<SuperAdmin />} />
+        {/* <Route path="/admin" element={<SuperAdmin />} /> */}
         <Route
-          path="/regionalAdmin/*"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={["SuperAdmin"]}>
               <SuperAdminDashboard />
@@ -68,11 +71,13 @@ function App() {
         >
           
           <Route index element={<Navigate to="products" replace />} />
+          <Route path="dashboard" element={<Dashboard/>} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />
+          <Route path="orders" element={<AllOrders />} />
           <Route path="reports" element={<Reports />} />
           <Route path="sellers" element={<Sellers />} />
-          <Route path="regional-admins" element={<RegionalAdminList/>} />
+          <Route path="regAdminList" element={<RegionalAdminList/>} />
           <Route path="admin" element={<SuperAdmin />} />
         </Route>
       </Routes>

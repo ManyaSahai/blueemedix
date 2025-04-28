@@ -23,10 +23,13 @@ import {
 } from "@mui/material";
 
 const steps = ["Shipping Information", "Payment Method", "Review Order"];
-const storedAddress = JSON.parse(localStorage.getItem("customerAddress"));
+const storedAddress = localStorage.getItem("customerAddress") ? JSON.parse(localStorage.getItem("customerAddress"))
+  : null;
+
 const name = localStorage.getItem("name");
 const e_mail = localStorage.getItem("email");
 const phone_no = localStorage.getItem("number");
+
 
 
 const CheckoutPage = () => {

@@ -1,5 +1,6 @@
 // src/components/Profile/ProfilePage.jsx
 import React, { useState, useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
 import {
   Typography,
   CircularProgress,
@@ -21,6 +22,12 @@ import {
   Tab,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -34,6 +41,8 @@ import {
   LocationOn as LocationIcon,
   VerifiedUser as VerifiedIcon,
   ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  Warning as WarningIcon,
 } from "@mui/icons-material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -52,52 +61,50 @@ function ProfilePage() {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [currentTab, setCurrentTab] = useState(0);
 
+  // State for delete account dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   // Fetch user data when component mounts
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // In a real app, replace this with your actual API call
         setLoading(true);
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:5000/api/auth/me", {
+          headers: {
+            Authorization: `${token}`,
+          },
+        });
 
-        // Mock data for demonstration - replace with actual API call
-        setTimeout(() => {
-          const mockData = {
-            name: "John Doe",
-            e_mail: "john.doe@example.com",
-            phone_no: "+1 (555) 123-4567",
-            date_of_birth: "1990-01-01",
-            gender: "Male",
-            role: "Seller",
-            verification_status: "Verified",
-            region: "North America",
-            verified_by: "Admin User",
-            verification_date: "2023-06-15",
-            created_at: "2023-01-10T14:30:00",
-            updated_at: "2023-12-05T09:15:00",
-            address: {
-              first_line: "123 Main Street",
-              second_line: "Apt 4B",
-              city: "New York",
-              state: "NY",
-              pin_code: "10001",
-            },
-            desc: "Experienced seller with 5 years in e-commerce specializing in electronics and accessories.",
-          };
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            `Failed to fetch user data: ${response.status} - ${
+              errorData?.message || response.statusText
+            }`
+          );
+        }
 
-          setUserData(mockData);
+        const data = await response.json();
+        if (data.success && data.user) {
+          setUserData(data.user);
           setEditedData({
-            name: mockData.name || "",
-            e_mail: mockData.e_mail || "",
-            phone_no: mockData.phone_no || "",
-            date_of_birth: mockData.date_of_birth
-              ? new Date(mockData.date_of_birth)
+            name: data.user.name || "",
+            e_mail: data.user.e_mail || "",
+            phone_no: data.user.phone_no || "",
+            date_of_birth: data.user.date_of_birth
+              ? new Date(data.user.date_of_birth)
               : null,
-            gender: mockData.gender || "",
+            gender: data.user.gender || "",
+            address: { ...data.user.address },
+            desc: data.user.desc || "",
           });
-          setLoading(false);
-        }, 1000); // Simulating API delay
+        } else {
+          throw new Error("Failed to fetch user data: Invalid response format");
+        }
       } catch (err) {
-        setError(err);
+        setError(err.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -116,6 +123,8 @@ function ProfilePage() {
           ? new Date(userData.date_of_birth)
           : null,
         gender: userData.gender || "",
+        address: { ...userData.address },
+        desc: userData.desc || "",
       });
     }
     setIsEditing(!isEditing);
@@ -125,34 +134,110 @@ function ProfilePage() {
     setEditedData({ ...editedData, [field]: event.target.value });
   };
 
+  const handleAddressChange = (field) => (event) => {
+    setEditedData({
+      ...editedData,
+      address: { ...editedData.address, [field]: event.target.value },
+    });
+  };
+
   const handleDateChange = (newDate) => {
     setEditedData({ ...editedData, date_of_birth: newDate });
   };
 
-  const handleSave = () => {
-    // In a real app, make an API call to update the profile
-    // For demo purposes, just update the local state
-    setUserData({
-      ...userData,
-      ...editedData,
-    });
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId")
+      const response = await fetch(`http://localhost:5000/api/auth/user/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify(editedData),
+      });
 
-    // Show success message
-    setSnackbarMessage("Profile updated successfully!");
-    setSnackbarOpen(true);
-    setIsEditing(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `Failed to update profile: ${response.status} - ${
+            errorData?.message || response.statusText
+          }`
+        );
+      }
+
+      const data = await response.json();
+      if (data.success && data.user) {
+        setUserData(data.user);
+        setSnackbarMessage("Profile updated successfully!");
+        setSnackbarOpen(true);
+        setIsEditing(false);
+      } else {
+        throw new Error("Failed to update profile: Invalid response format");
+      }
+    } catch (err) {
+      setError(err.message);
+      setSnackbarMessage(`Error updating profile: ${err.message}`);
+      setSnackbarOpen(true);
+    }
   };
 
-  const handleBackToSeller = () => {
-    navigate("/seller");
+  const handleBack = () => {
+    navigate(-1); // This navigates back one step in the history stack
   };
-
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
   };
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
+  };
+
+  const handleOpenDeleteDialog = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId")
+      const response = await fetch(`http://localhost:5000/api/auth/user/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `Failed to delete account: ${response.status} - ${
+            errorData?.message || response.statusText
+          }`
+        );
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        localStorage.removeItem("token");
+        setSnackbarMessage("Account deleted successfully!");
+        setSnackbarOpen(true);
+        navigate("/login"); // Redirect to login page after deletion
+      } else {
+        throw new Error("Failed to delete account: Invalid response format");
+      }
+    } catch (err) {
+      setError(err.message);
+      setSnackbarMessage(`Error deleting account: ${err.message}`);
+      setSnackbarOpen(true);
+    } finally {
+      setDeleteDialogOpen(false);
+    }
   };
 
   // Generate avatar text from name (initials)
@@ -170,6 +255,7 @@ function ProfilePage() {
   const getVerificationStatusColor = (status) => {
     if (!status) return "default";
     switch (status.toLowerCase()) {
+      case "approved":
       case "verified":
         return "success";
       case "pending":
@@ -194,7 +280,7 @@ function ProfilePage() {
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">Error loading profile information.</Alert>
+        <Alert severity="error">{`Error loading profile information: ${error}`}</Alert>
       </Container>
     );
   }
@@ -203,13 +289,22 @@ function ProfilePage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Button
         startIcon={<ArrowBackIcon />}
-        onClick={handleBackToSeller}
+        onClick={handleBack} // Use the handleBack function
         sx={{ mb: 2 }}
       >
-        Back to Seller Dashboard
+        Back
       </Button>
 
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, position: "relative" }}>
+        {/* Delete Account Button */}
+        <IconButton
+          onClick={handleOpenDeleteDialog}
+          color="error"
+          sx={{ position: "absolute", top: 10, right: 10 }}
+        >
+          <DeleteIcon />
+        </IconButton>
+
         {/* Header Section */}
         <Box
           sx={{
@@ -284,7 +379,11 @@ function ProfilePage() {
                   {userData.verification_status && (
                     <Chip
                       icon={<VerifiedIcon />}
-                      label={userData.verification_status}
+                      label={
+                        userData.verification_status === "approved"
+                          ? "Verified"
+                          : userData.verification_status
+                      }
                       color={getVerificationStatusColor(
                         userData.verification_status
                       )}
@@ -468,8 +567,7 @@ function ProfilePage() {
                         {isEditing ? (
                           <LocalizationProvider dateAdapter={AdapterDateFns}>
                             <DatePicker
-                              value={editedData.date_of_birth}
-                              onChange={handleDateChange}
+                              value={editedData.date_of_birth} onChange={handleDateChange}
                               renderInput={(params) => (
                                 <TextField {...params} fullWidth />
                               )}
@@ -500,9 +598,7 @@ function ProfilePage() {
                             Region
                           </Typography>
                         </Box>
-                        <Typography>
-                          {userData.region || "Not specified"}
-                        </Typography>
+                        <Typography>{userData.region || "Not specified"}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -524,13 +620,99 @@ function ProfilePage() {
                               Address
                             </Typography>
                           </Box>
-                          <Typography>{userData.address.first_line}</Typography>
-                          {userData.address.second_line && (
-                            <Typography>
-                              {userData.address.second_line}
-                            </Typography>
+                          {isEditing ? (
+                            <Grid container spacing={2}>
+                              <Grid item xs={12}>
+                                <TextField
+                                  fullWidth
+                                  label="First Line"
+                                  value={editedData.address?.first_line || ""}
+                                  onChange={handleAddressChange("first_line")}
+                                  variant="outlined"
+                                />
+                              </Grid>
+                              <Grid item xs={12}>
+                                <TextField
+                                  fullWidth
+                                  label="Second Line"
+                                  value={editedData.address?.second_line || ""}
+                                  onChange={handleAddressChange("second_line")}
+                                  variant="outlined"
+                                />
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <TextField
+                                  fullWidth
+                                  label="City"
+                                  value={editedData.address?.city || ""}
+                                  onChange={handleAddressChange("city")}
+                                  variant="outlined"
+                                />
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <TextField
+                                  fullWidth
+                                  label="State"
+                                  value={editedData.address?.state || ""}
+                                  onChange={handleAddressChange("state")}
+                                  variant="outlined"
+                                />
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <TextField
+                                  fullWidth
+                                  label="Pin Code"
+                                  value={editedData.address?.pin_code?.toString() || ""}
+                                  onChange={handleAddressChange("pin_code")}
+                                  variant="outlined"
+                                  type="number"
+                                />
+                              </Grid>
+                            </Grid>
+                          ) : (
+                            <>
+                              <Typography>{userData.address.first_line}</Typography>
+                              {userData.address.second_line && (
+                                <Typography>
+                                  {userData.address.second_line}
+                                </Typography>
+                              )}
+                              <Typography>{`${userData.address.city}, ${userData.address.state} ${userData.address.pin_code}`}</Typography>
+                            </>
                           )}
-                          <Typography>{`${userData.address.city}, ${userData.address.state} ${userData.address.pin_code}`}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+
+                  {/* Description */}
+                  {userData.desc && (
+                    <Grid item xs={12}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mb: 2,
+                            }}
+                          >
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              Description
+                            </Typography>
+                          </Box>
+                          {isEditing ? (
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={4}
+                              value={editedData.desc || ""}
+                              onChange={handleInputChange("desc")}
+                              variant="outlined"
+                            />
+                          ) : (
+                            <Typography>{userData.desc}</Typography>
+                          )}
                         </CardContent>
                       </Card>
                     </Grid>
@@ -554,7 +736,11 @@ function ProfilePage() {
                           </Typography>
                         </Box>
                         <Chip
-                          label={userData.verification_status || "Not verified"}
+                          label={
+                            userData.verification_status === "approved"
+                              ? "Verified"
+                              : userData.verification_status || "Not verified"
+                          }
                           color={getVerificationStatusColor(
                             userData.verification_status
                           )}
@@ -612,28 +798,6 @@ function ProfilePage() {
                       </Card>
                     </Grid>
                   )}
-
-                  {/* Description */}
-                  {userData.desc && (
-                    <Grid item xs={12}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              mb: 2,
-                            }}
-                          >
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              Description
-                            </Typography>
-                          </Box>
-                          <Typography>{userData.desc}</Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  )}
                 </Grid>
               )}
             </Grid>
@@ -662,6 +826,35 @@ function ProfilePage() {
         onClose={handleSnackbarClose}
         message={snackbarMessage}
       />
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle color="error" id="alert-dialog-title">
+          <Box display="flex" alignItems="center">
+            <WarningIcon color="error" sx={{ mr: 1 }} />
+            Delete Your Account?
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            This action will permanently delete your account and all associated
+            data. Are you sure you want to proceed?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} color="primary">
+            No
+          </Button>
+          <Button onClick={handleDeleteAccount} color="error" autoFocus>
+            Yes, Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

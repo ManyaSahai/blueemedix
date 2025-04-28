@@ -76,12 +76,13 @@ export const productApi = createApi({
           return { data: updatedProductWithId };
         }
     
-        return { error: new Error('Failed to update product') };
+        const errorData = await response.json(); //try to get error message from backend
+        return { error: { message: errorData?.message || 'Failed to update product' } }; // Return a serializable error
       },
-    
-      // ✅ THIS is what triggers refetching `getProducts` after update
+      // ✅ This is what triggers refetching `getProducts` after update
       invalidatesTags: ['Product'],
     }),
+    
     
     // Delete a product by ID
     deleteProduct: builder.mutation({

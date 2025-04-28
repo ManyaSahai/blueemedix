@@ -26,9 +26,19 @@ export default function Header(){
 
     const DrawerItems = [
       {
+        label: "Dashboard",
+        icon: BarChartIcon,
+        path: "dashboard"
+      },
+      {
         label: "Customers",
         icon: PeopleIcon,
         path: "users"
+      },
+      {
+        label: "Orders",
+        icon: InventoryIcon,
+        path: "orders"
       },
       {
         label: "Offers",
@@ -43,7 +53,7 @@ export default function Header(){
       {
         label: "Regional admin",
         icon: MapIcon,
-        path: "regionalAdmin"
+        path: "regAdminList"
       },
       {
         label: "Reports",
@@ -74,7 +84,7 @@ export default function Header(){
       <List>
         {DrawerItems.map((item) => (
           <React.Fragment key={item.label}>
-            <ListItem disablePadding component={NavLink} to={`/superadmin/${item.path}`}>
+            <ListItem disablePadding component={NavLink} to={`/admin/${item.path}`}>
               <ListItemButton>
                 <ListItemIcon>
                   <item.icon />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   AppBar,
   Toolbar,
@@ -11,6 +11,8 @@ import {
   Box,
   FormControl,
   IconButton,
+  Menu,
+  Divider,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
@@ -19,14 +21,15 @@ import PersonIcon from "@mui/icons-material/Person";
 import HomeIcon from "@mui/icons-material/Home";
 import CategoryIcon from "@mui/icons-material/Category";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import HistoryIcon from '@mui/icons-material/History';
+import HistoryIcon from "@mui/icons-material/History";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import LogoutIcon from "@mui/icons-material/Logout";
 import logo from "../images/logo.png";
 import { useTheme } from "@mui/material/styles";
-import { useContext } from "react";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import { ColorModeContext } from "../Theme";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const NavbarContainer = styled(AppBar)(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -34,6 +37,7 @@ const NavbarContainer = styled(AppBar)(({ theme }) => ({
   boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
   position: "static",
 }));
+
 const LogoContainer = styled(Box)({
   display: "flex",
   alignItems: "center",
@@ -119,18 +123,22 @@ const Navigation = [
   {
     label: "Home",
     icon: <HomeIcon />,
+    path: "/",
   },
   {
     label: "Category",
     icon: <CategoryIcon />,
+    path: "/categories",
   },
   {
     label: "Offers",
     icon: <LocalOfferIcon />,
+    path: "/offers",
   },
   {
     label: "Login",
     icon: <PersonIcon />,
+    path: "/login",
   },
 ];
 
@@ -138,9 +146,32 @@ const Navigation = [
 const Navbar = () => {
   const [searchCategory, setSearchCategory] = useState("All");
   const [categoryHovered, setCategoryHovered] = useState(false);
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
+  const theme = useTheme();
+  const colorMode = useContext(ColorModeContext);
+  const navigate = useNavigate();
 
   const handleCategoryChange = (event) => {
     setSearchCategory(event.target.value);
+  };
+
+  const handleProfileClick = (event) => {
+    setProfileMenuAnchor(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setProfileMenuAnchor(null);
+  };
+
+  const handleDashboardOpen = () => {
+    setProfileMenuAnchor(null);
+    navigate("/dashboard");
+  };
+
+  const handleLogout = () => {
+    setProfileMenuAnchor(null);
+    // Add your logout logic here
+    alert("Logged out successfully!");
   };
 
   return (
@@ -154,16 +185,18 @@ const Navbar = () => {
       >
         <LogoContainer>
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <img
-              src={logo}
-              alt="BlueMedix Logo"
-              style={{
-                width: "auto",
-                height: "100px",
-                marginRight: "8px",
-                objectFit: "contain",
-              }}
-            />
+            <Link to="/">
+              <img
+                src={logo}
+                alt="BlueMedix Logo"
+                style={{
+                  width: "auto",
+                  height: "100px",
+                  marginRight: "8px",
+                  objectFit: "contain",
+                }}
+              />
+            </Link>
           </Box>
         </LogoContainer>
         <SearchContainer>
@@ -258,11 +291,64 @@ const Navbar = () => {
               );
             }
 
+            // Modify the Login nav item to open profile menu
+            if (navItem.label === "Login") {
+              return (
+                <NavItem
+                  key={navItem.label}
+                  sx={{ display: "flex", flexDirection: "column", gap: "2px" }}
+                  onClick={handleProfileClick}
+                >
+                  <CircleIconButton size="small">
+                    {navItem.icon}
+                  </CircleIconButton>
+                  <Typography variant="body2">{navItem.label}</Typography>
+
+                  {/* Profile Menu */}
+                  <Menu
+                    anchorEl={profileMenuAnchor}
+                    open={Boolean(profileMenuAnchor)}
+                    onClose={handleProfileMenuClose}
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                    transformOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                  >
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Typography variant="subtitle1">John Doe</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        john.doe@example.com
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <MenuItem onClick={handleDashboardOpen}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <DashboardIcon fontSize="small" sx={{ mr: 1 }} />
+                        <Typography>Dashboard</Typography>
+                      </Box>
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
+                        <Typography>Logout</Typography>
+                      </Box>
+                    </MenuItem>
+                  </Menu>
+                </NavItem>
+              );
+            }
+
             // Other nav items
             return (
               <NavItem
                 key={navItem.label}
                 sx={{ display: "flex", flexDirection: "column", gap: "2px" }}
+                component={Link}
+                to={navItem.path}
               >
                 <CircleIconButton size="small">{navItem.icon}</CircleIconButton>
                 <Typography variant="body2">{navItem.label}</Typography>
@@ -279,43 +365,36 @@ const Navbar = () => {
               alignItems: "center",
             }}
           >
-              <Link to="/cart">
-                <IconButtonContainer>
-                    <IconButton color="primary">
-                      <Badge badgeContent={0} color="primary">
-                        <ShoppingCartIcon />
-                      </Badge>
-                    </IconButton>
-                    <IconLabel>
-                      Cart
-                    </IconLabel>
-                </IconButtonContainer>
-              </Link>
-              <Link to="/orders">
-                <IconButtonContainer>
-                  <IconButton color="primary">
-                    <Badge badgeContent={0} color="primary">
-                      <HistoryIcon/>
-                    </Badge>
-                  </IconButton>
-                  <IconLabel>
-                    Orders
-                  </IconLabel>
-                </IconButtonContainer>
-              </Link>
+            <Link to="/cart">
+              <IconButtonContainer>
+                <IconButton color="primary">
+                  <Badge badgeContent={0} color="primary">
+                    <ShoppingCartIcon />
+                  </Badge>
+                </IconButton>
+                <IconLabel>Cart</IconLabel>
+              </IconButtonContainer>
+            </Link>
+            <Link to="/orders">
+              <IconButtonContainer>
+                <IconButton color="primary">
+                  <Badge badgeContent={0} color="primary">
+                    <HistoryIcon />
+                  </Badge>
+                </IconButton>
+                <IconLabel>Orders</IconLabel>
+              </IconButtonContainer>
+            </Link>
             <IconButtonContainer>
-              <IconButton
-                color="primary"
-                onClick={useContext(ColorModeContext).toggleColorMode}
-              >
-                {useTheme().palette.mode === "dark" ? (
+              <IconButton color="primary" onClick={colorMode.toggleColorMode}>
+                {theme.palette.mode === "dark" ? (
                   <LightModeIcon />
                 ) : (
                   <DarkModeIcon />
                 )}
               </IconButton>
               <IconLabel>
-                {useTheme().palette.mode === "dark" ? "Light" : "Dark"}
+                {theme.palette.mode === "dark" ? "Light" : "Dark"}
               </IconLabel>
             </IconButtonContainer>
           </Box>

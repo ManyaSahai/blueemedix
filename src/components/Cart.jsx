@@ -25,6 +25,8 @@ const Cart = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef(null);
+  // console.log(cartItems); // Log cartItems to inspect the structure
+
 
   const handleRemoveItem = (productId) => {
     deleteCartItem({ userId, productId }) // Remove item from cart
@@ -89,7 +91,7 @@ const Cart = () => {
 
   // If showing checkout page
   if (showCheckout) {
-    return <CheckoutPage prescriptions={uploadedFiles} />;
+    return <CheckoutPage prescriptions={uploadedFiles} cartData={cartItems}/>;
   }
 
   return (

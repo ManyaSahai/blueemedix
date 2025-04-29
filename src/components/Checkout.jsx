@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import {
   Box,
   Button,
@@ -21,6 +21,8 @@ import {
   Typography,
   Paper,
 } from "@mui/material";
+import { usePlaceOrderMutation } from "../redux/ordersApi";
+
 
 const steps = ["Shipping Information", "Payment Method", "Review Order"];
 const storedAddress = localStorage.getItem("customerAddress") ? JSON.parse(localStorage.getItem("customerAddress"))
@@ -29,13 +31,14 @@ const storedAddress = localStorage.getItem("customerAddress") ? JSON.parse(local
 const name = localStorage.getItem("name");
 const e_mail = localStorage.getItem("email");
 const phone_no = localStorage.getItem("number");
+const userId = localStorage.getItem("userId");
 
 
-
-const CheckoutPage = () => {
+const CheckoutPage = ({cartData}) => {
   const [activeStep, setActiveStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [upiId, setUpiId] = useState("");
+  const [placeOrder, { isLoading, isSuccess, isError, error }] = usePlaceOrderMutation();
   const [upiError, setUpiError] = useState("");
   const [address, setAddress] = useState({
     first_line: storedAddress?.first_line || "",
@@ -49,21 +52,23 @@ const CheckoutPage = () => {
     e_mail: e_mail || "",
     phone_no: phone_no || ""
   });
-
+  const cart = cartData.cart;
+// console.log("cart from checkout", cart)
+// console.log(cart[0].product.price.$numberDecimal)
 
   // Cart items from your page
-  const cartItems = [
-    {
-      name: "Swadeshi Haritaki Churna Pack of 2",
-      price: 0,
-      quantity: 1,
-    },
-    {
-      name: "Biotique Bio Citron Stimulating Body Massage Oil",
-      price: 0,
-      quantity: 1,
-    },
-  ];
+  // const cartItems = [
+  //   {
+  //     name: "Swadeshi Haritaki Churna Pack of 2",
+  //     price: 0,
+  //     quantity: 1,
+  //   },
+  //   {
+  //     name: "Biotique Bio Citron Stimulating Body Massage Oil",
+  //     price: 0,
+  //     quantity: 1,
+  //   },
+  // ];
 
   const handleNext = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -93,6 +98,62 @@ const CheckoutPage = () => {
     const error = validateUpiId(value);
     setUpiError(error);
   };
+
+  const handlePlaceOrder = async () => {
+    // Calculate the total amount dynamically based on cart items
+    const totalAmount = cart.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    ) + 50; // Add shipping cost
+    
+    const orderData = {
+      user: userId, // User ID from localStorage
+      address,
+      cart, 
+      payment: {
+        method: paymentMethod,
+        upiId: paymentMethod.toLowerCase() === "upi" ? upiId : null,
+      },
+      totalAmount, // Calculated dynamically
+    };
+    console.log(orderData)
+    try {
+      // Place order by calling the mutation
+      const res = await placeOrder(orderData).unwrap();
+      console.log("Order placed successfully:", res);
+      setActiveStep((prev) => prev + 1);
+    } catch (err) {
+      // Log the error for debugging
+      console.error("Error placing order:", err);
+    
+      // Check if the error contains a response object
+      if (err.response) {
+        console.error("API Error response data:", err.response.data);
+        alert(`Order placement failed: ${err.response.data.message || 'An error occurred.'}`);
+      } else if (err.message) {
+        console.error("Error message:", err.message);
+        alert(`An error occurred while placing your order: ${err.message}`);
+      } else {
+        console.error("Unknown error occurred:", err);
+        alert("An unknown error occurred. Please try again later.");
+      }
+    }
+  };
+  
+  
+  
+  useEffect(() => {
+    if (isSuccess) {
+      console.log("Order placed successfully!");
+      
+    }
+  
+    if (isError) {
+      console.error("Order placement failed:", error);
+      
+    }
+  }, [isSuccess, isError, error]);
+  
 
   const renderShippingForm = () => (
     <Grid container spacing={3}>
@@ -334,27 +395,30 @@ const CheckoutPage = () => {
   );
 
   const renderOrderSummary = () => {
-    const subtotal = cartItems.reduce(
-      (total, item) => total + item.price * item.quantity,
+    const subtotal = cart.reduce(
+      (total, item) =>
+        total + parseFloat(item.product.price?.$numberDecimal || 0) * item.quantity,
       0
     );
     const shipping = 50; // Shipping cost
     const total = subtotal + shipping;
-
+  
     return (
       <Box>
         <Typography variant="h6" gutterBottom>
           Order Summary
         </Typography>
-        {cartItems.map((item, index) => (
+        {cart.map((item, index) => (
           <Box
             key={index}
             sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
           >
             <Typography variant="body1">
-              {item.name} × {item.quantity}
+              {item.product.name} × {item.quantity}
             </Typography>
-            <Typography variant="body1">₹{item.price.toFixed(2)}</Typography>
+            <Typography variant="body1">
+              ₹{parseFloat(item.product.price?.$numberDecimal || 0).toFixed(2)}
+            </Typography>
           </Box>
         ))}
         <Divider sx={{ my: 2 }} />
@@ -374,6 +438,7 @@ const CheckoutPage = () => {
       </Box>
     );
   };
+  
 
   const renderOrderReview = () => (
     <Grid container spacing={3}>
@@ -412,7 +477,7 @@ const CheckoutPage = () => {
           <Typography variant="subtitle1" gutterBottom>
             Order Items
           </Typography>
-          {cartItems.map((item, index) => (
+          {cart.map((item, index) => (
             <Box
               key={index}
               sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
@@ -420,7 +485,7 @@ const CheckoutPage = () => {
               <Typography variant="body2">
                 {item.name} × {item.quantity}
               </Typography>
-              <Typography variant="body2">₹{item.price.toFixed(2)}</Typography>
+              <Typography variant="body2">₹{parseFloat(item.product.price?.$numberDecimal || 0).toFixed(2)}</Typography>
             </Box>
           ))}
         </Paper>
@@ -496,10 +561,18 @@ const CheckoutPage = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={handleNext}
+                    onClick={() => {
+                      if (activeStep === steps.length - 1) {
+                        handlePlaceOrder(); // Place the order on the last step
+                      } else {
+                        handleNext(); // Otherwise go to the next step
+                      }
+                    }}
+                    disabled={isLoading || (paymentMethod === "upi" && !!upiError)}
                   >
-                    {activeStep === steps.length - 1 ? "Place Order" : "Next"}
+                    {activeStep === steps.length - 1 ? (isLoading ? "Placing Order..." : "Place Order") : "Next"}
                   </Button>
+
                 </Box>
               </CardContent>
             </Card>

@@ -24,10 +24,11 @@ import Profile from "./components/Profile/Profile.jsx"; // Import the new Profil
 import "./index.css";
 import RegionalAdminList from "./components/SuperAdminDashboard/RegionalAdminList.jsx";
 import SuperAdmin from "./pages/Super/SuperAdmin.jsx";
-import { getDashboardData, getOrders } from './redux/SuperAdmin/api.js';
-import store from './redux/SuperAdmin/store.js';
+import { getDashboardData, getOrders } from "./redux/SuperAdmin/api.js";
+import store from "./redux/SuperAdmin/store.js";
 import AllOrders from "./components/SuperAdminDashboard/AllOrders.jsx";
 import Dashboard from "./pages/Super/Dashboard.jsx";
+import CustomerDashboard from "./components/CustomerDashboard.jsx";
 import TopSellingProducts from "./components/SuperAdminDashboard/SpecialProducts/TopSelling.jsx";
 import CategoryList from "./components/SuperAdminDashboard/Category.jsx";
 
@@ -38,8 +39,9 @@ function App() {
   const hideNavbar =
     location.pathname.startsWith("/regionalAdmin") ||
     location.pathname.startsWith("/seller") ||
-    location.pathname.startsWith("/regional-admin")||
+    location.pathname.startsWith("/regional-admin") ||
     location.pathname.startsWith("/admin");
+  location.pathname.startsWith("/dashboard");
 
   return (
     <Theme>
@@ -50,6 +52,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/category/:categoryId" element={<Category />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/dashboard" element={<CustomerDashboard />} />
         {/* uncomment below line */}
         <Route path="/login" element={<Login />} />
         <Route path="/login2" element={<Register />} />
@@ -71,9 +74,8 @@ function App() {
             </ProtectedRoute>
           }
         >
-          
           <Route index element={<Navigate to="products" replace />} />
-          <Route path="dashboard" element={<Dashboard/>} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />
           <Route path="orders" element={<AllOrders />} />

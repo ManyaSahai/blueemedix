@@ -15,6 +15,7 @@ export default function Orders() {
   const userId = localStorage.getItem("userId");
   const { data, isLoading, isError } = useGetOrdersByUserQuery(userId);
   //console.log(data.orders[0].items[0].product.name)
+  // console.log(data)
 
   if (isLoading) return <p style={{ color: "white", textAlign: "center" }}>Loading your orders...</p>;
   if (isError) return <p style={{ color: "red", textAlign: "center" }}>Failed to load orders.</p>;

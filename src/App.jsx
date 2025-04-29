@@ -31,6 +31,7 @@ import Dashboard from "./pages/Super/Dashboard.jsx";
 import CustomerDashboard from "./components/CustomerDashboard.jsx";
 import TopSellingProducts from "./components/SuperAdminDashboard/SpecialProducts/TopSelling.jsx";
 import CategoryList from "./components/SuperAdminDashboard/Category.jsx";
+import OrderDetails from "./pages/SellerDashboard/OrderDetails.jsx";
 
 store.dispatch(getDashboardData());
 store.dispatch(getOrders());
@@ -59,6 +60,7 @@ function App() {
         <Route path="/offers" element={<Offers />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/:id" element={<OrderDetails />} />
         {/* Seller routes */}
         <Route path="/seller" element={<SellerDashboard />} />
         <Route path="/seller/profile" element={<Profile />} />{" "}

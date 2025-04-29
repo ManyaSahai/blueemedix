@@ -47,6 +47,8 @@ import {
   Work,
   Payment,
 } from "@mui/icons-material";
+import { useGetOrdersByUserQuery , useGetOrderByIdQuery} from "../redux/ordersApi";
+// import Orders from "./Orders";
 
 const DashboardContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(4),
@@ -73,39 +75,49 @@ const InvoiceButton = styled(Button)(({ theme }) => ({
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = React.useState("orders");
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const storedAddress = localStorage.getItem("customerAddress") ? JSON.parse(localStorage.getItem("customerAddress"))
+  : null;
+
+const name = localStorage.getItem("name");
+const e_mail = localStorage.getItem("email");
+const phone_no = localStorage.getItem("number");
+  const userId = localStorage.getItem("userId");
+  const { data, isLoading, isError } = useGetOrdersByUserQuery(userId);
   const navigate = useNavigate();
   const open = Boolean(anchorEl);
+  // console.log(data)
+  
 
   // Mock order data with invoice URLs
-  const orders = [
-    {
-      id: "ORD-12345",
-      date: "2023-04-15",
-      status: "Delivered",
-      total: "$124.95",
-      items: 3,
-      tracking: "UPS-1Z999AA1012345678",
-      invoiceUrl: "https://example.com/invoices/ORD-12345.pdf",
-    },
-    {
-      id: "ORD-12346",
-      date: "2023-04-02",
-      status: "Shipped",
-      total: "$56.80",
-      items: 2,
-      tracking: "FEDEX-123456789012",
-      invoiceUrl: "https://example.com/invoices/ORD-12346.pdf",
-    },
-    {
-      id: "ORD-12347",
-      date: "2023-03-28",
-      status: "Processing",
-      total: "$89.50",
-      items: 1,
-      tracking: "",
-      invoiceUrl: "https://example.com/invoices/ORD-12347.pdf",
-    },
-  ];
+  // const orders = [
+  //   {
+  //     id: "ORD-12345",
+  //     date: "2023-04-15",
+  //     status: "Delivered",
+  //     total: "$124.95",
+  //     items: 3,
+  //     tracking: "UPS-1Z999AA1012345678",
+  //     invoiceUrl: "https://example.com/invoices/ORD-12345.pdf",
+  //   },
+  //   {
+  //     id: "ORD-12346",
+  //     date: "2023-04-02",
+  //     status: "Shipped",
+  //     total: "$56.80",
+  //     items: 2,
+  //     tracking: "FEDEX-123456789012",
+  //     invoiceUrl: "https://example.com/invoices/ORD-12346.pdf",
+  //   },
+  //   {
+  //     id: "ORD-12347",
+  //     date: "2023-03-28",
+  //     status: "Processing",
+  //     total: "$89.50",
+  //     items: 1,
+  //     tracking: "",
+  //     invoiceUrl: "https://example.com/invoices/ORD-12347.pdf",
+  //   },
+  // ];
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -154,7 +166,7 @@ const DashboardPage = () => {
 
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Typography variant="subtitle1" sx={{ mr: 2 }}>
-            Hi, John Doe
+            Hi, {name}
           </Typography>
           <IconButton
             onClick={handleMenuOpen}
@@ -165,7 +177,7 @@ const DashboardPage = () => {
             aria-expanded={open ? "true" : undefined}
           >
             <Badge overlap="circular">
-              <Avatar sx={{ width: 40, height: 40 }}>JD</Avatar>
+              <Avatar sx={{ width: 40, height: 40 }}>{name}</Avatar>
             </Badge>
           </IconButton>
 
@@ -298,12 +310,8 @@ const DashboardPage = () => {
                   My Orders
                 </Typography>
 
-                {orders.length > 0 ? (
-                  <TableContainer
-                    component={Paper}
-                    elevation={0}
-                    variant="outlined"
-                  >
+                {data?.orders?.length > 0 ? (
+                  <TableContainer component={Paper} elevation={0} variant="outlined">
                     <Table>
                       <TableHead>
                         <TableRow>
@@ -316,12 +324,24 @@ const DashboardPage = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {orders.map((order) => (
-                          <TableRow key={order.id}>
-                            <TableCell>{order.id}</TableCell>
-                            <TableCell>{order.date}</TableCell>
-                            <TableCell>{order.items}</TableCell>
-                            <TableCell>{order.total}</TableCell>
+                        {data.orders.map((order) => (
+                          <TableRow key={order._id}>
+                            <TableCell>{order._id}</TableCell>
+                            <TableCell>
+                              {new Date(order.createdAt).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {order.items.map((item, index) => (
+                                <Typography
+                                  variant="body2"
+                                  key={index}
+                                  sx={{ whiteSpace: "nowrap" }}
+                                >
+                                  - {item.product?.name} × {item.quantity}
+                                </Typography>
+                              ))}
+                            </TableCell>
+                            <TableCell>₹{order.totalAmount}</TableCell>
                             <TableCell>
                               <OrderStatusChip
                                 label={order.status}
@@ -330,7 +350,7 @@ const DashboardPage = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              <Box sx={{ display: "flex" }}>
+                              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                                 <Tooltip title="Download Invoice">
                                   <InvoiceButton
                                     variant="outlined"
@@ -346,9 +366,7 @@ const DashboardPage = () => {
                                 <Button
                                   variant="outlined"
                                   size="small"
-                                  onClick={() =>
-                                    navigate(`/orders/${order.id}`)
-                                  }
+                                  onClick={() => navigate(`/orders/${order._id}`)}
                                 >
                                   Details
                                 </Button>
@@ -380,6 +398,7 @@ const DashboardPage = () => {
                 )}
               </Box>
             )}
+
 
             {/* Order Tracking Tab */}
             {activeTab === "tracking" && (
@@ -494,16 +513,11 @@ const DashboardPage = () => {
                         <Grid container spacing={2} sx={{ mb: 2 }}>
                           <Grid item xs={12} sm={6}>
                             <Typography variant="body2" color="text.secondary">
-                              First Name
+                            Name
                             </Typography>
-                            <Typography variant="body1">John</Typography>
+                            <Typography variant="body1">{name}</Typography>
                           </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              Last Name
-                            </Typography>
-                            <Typography variant="body1">Doe</Typography>
-                          </Grid>
+                          
                         </Grid>
 
                         <Divider sx={{ my: 2 }} />
@@ -517,7 +531,7 @@ const DashboardPage = () => {
                             sx={{ display: "flex", alignItems: "center" }}
                           >
                             <Email fontSize="small" sx={{ mr: 1 }} />{" "}
-                            john.doe@example.com
+                            {e_mail}
                           </Typography>
                         </Box>
 
@@ -530,11 +544,11 @@ const DashboardPage = () => {
                             sx={{ display: "flex", alignItems: "center" }}
                           >
                             <Phone fontSize="small" sx={{ mr: 1 }} /> +1 (555)
-                            123-4567
+                            {phone_no}
                           </Typography>
                         </Box>
 
-                        <Box>
+                        {/* <Box>
                           <Typography variant="body2" color="text.secondary">
                             Date of Birth
                           </Typography>
@@ -545,7 +559,7 @@ const DashboardPage = () => {
                             <CalendarToday fontSize="small" sx={{ mr: 1 }} />{" "}
                             January 15, 1990
                           </Typography>
-                        </Box>
+                        </Box> */}
                       </CardContent>
                     </Card>
                   </Grid>
@@ -601,13 +615,17 @@ const DashboardPage = () => {
                         </Box>
 
                         <Typography variant="body2">
-                          123 Main Street
-                          <br />
-                          Apt 4B
-                          <br />
-                          New York, NY 10001
-                          <br />
-                          United States
+                          {storedAddress ? (
+                            <>
+                              {storedAddress.first_line}, {storedAddress.second_line}
+                              <br />
+                              {storedAddress.city}, {storedAddress.state} {storedAddress.pin_code}
+                              <br />
+                              India
+                            </>
+                          ) : (
+                            "No address available"
+                          )}
                         </Typography>
 
                         <Box sx={{ mt: 2, display: "flex", gap: 1 }}>

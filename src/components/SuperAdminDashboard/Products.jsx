@@ -219,7 +219,7 @@ export default function Products() {
                             <Box
                                 sx={{
                                     height: 180,
-                                    backgroundColor: '#f9f9f9',
+                                    backgroundColor: 'white', // Added background color here
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -231,6 +231,7 @@ export default function Products() {
                                     component="img"
                                     alt={product.name}
                                     image={product.image_link || "default-image.jpg"}
+                                    loading="lazy" 
                                     sx={{
                                         height: '100%',
                                         width: 'auto',
@@ -279,7 +280,7 @@ export default function Products() {
                                         mt: 'auto',
                                     }}
                                 >
-                                    ${product.price?.$numberDecimal ?? "0.00"}
+                                    ₹ {product.price?.$numberDecimal ?? "0.00"}
                                 </Typography>
                             </CardContent>
 
@@ -288,6 +289,7 @@ export default function Products() {
                                 justifyContent: 'flex-end',
                                 p: 1,
                                 borderTop: '1px solid #eee'
+
                             }}>
                                 <IconButton
                                     color="primary"

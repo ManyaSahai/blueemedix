@@ -28,6 +28,8 @@ import { getDashboardData, getOrders } from './redux/SuperAdmin/api.js';
 import store from './redux/SuperAdmin/store.js';
 import AllOrders from "./components/SuperAdminDashboard/AllOrders.jsx";
 import Dashboard from "./pages/Super/Dashboard.jsx";
+import TopSellingProducts from "./components/SuperAdminDashboard/SpecialProducts/TopSelling.jsx";
+import CategoryList from "./components/SuperAdminDashboard/Category.jsx";
 
 store.dispatch(getDashboardData());
 store.dispatch(getOrders());
@@ -78,6 +80,8 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="sellers" element={<Sellers />} />
           <Route path="regAdminList" element={<RegionalAdminList/>} />
+          <Route path="top-selling-products" element={<TopSellingProducts />} />
+          <Route path="category" element={<CategoryList />} />
           <Route path="admin" element={<SuperAdmin />} />
         </Route>
       </Routes>

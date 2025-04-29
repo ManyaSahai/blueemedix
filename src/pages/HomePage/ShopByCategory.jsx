@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -9,13 +9,12 @@ import {
   Container,
   useMediaQuery,
   useTheme,
+  CircularProgress
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { Link } from "react-router-dom";
-
-import categoryData from "../CategoryData.jsx";
 
 const CategorySection = styled(Box)(({ theme }) => ({
   padding: theme.spacing(4, 0),
@@ -43,6 +42,7 @@ const CarouselContainer = styled(Box)(({ theme }) => ({
   overflow: "hidden",
   position: "relative",
   margin: theme.spacing(2, 0),
+  width: "100%",
 }));
 
 const CarouselContent = styled(Box)(({ theme }) => ({
@@ -52,7 +52,12 @@ const CarouselContent = styled(Box)(({ theme }) => ({
 
 const CategoryCard = styled(Card)(({ theme }) => ({
   margin: theme.spacing(0, 1),
-  width: 150,
+  flex: "0 0 auto",
+  width: {
+    xs: "calc(50% - 16px)",
+    sm: "calc(25% - 16px)",
+    md: "calc(16.666% - 16px)",
+  },
   height: 180,
   cursor: "pointer",
   transition: "transform 0.3s ease, box-shadow 0.3s ease",
@@ -91,13 +96,64 @@ const ArrowButton = styled(IconButton)(({ theme }) => ({
   boxShadow: theme.shadows[2],
 }));
 
+const LoadingContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: 200,
+}));
+
 const ShopByCategory = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/products/cat");
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Add an "All" category at the beginning
+        const allCategory = {
+          _id: "all",
+          name: "All Products",
+          description: "Browse all our products",
+          image_link: "https://cdn-icons-png.flaticon.com/512/4290/4290854.png", // placeholder image for "All"
+        };
+        
+        setCategories([allCategory, ...data]);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setError(error.message);
+        setLoading(false);
+      }
+    };
 
+    fetchCategories();
+  }, []);
+  
+  // For infinite scroll, create a duplicated dataset after categories are loaded
+  const duplicatedCategories = [...categories, ...categories, ...categories];
+  
   const [scrollPosition, setScrollPosition] = useState(0);
-  const carouselRef = useRef(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const carouselContentRef = useRef(null);
+
+  // Update scroll position when categories are loaded
+  useEffect(() => {
+    if (categories.length > 0) {
+      setScrollPosition(categories.length);
+    }
+  }, [categories]);
 
   const getItemsPerView = () => {
     if (isMobile) return 2;
@@ -106,19 +162,129 @@ const ShopByCategory = () => {
   };
 
   const itemsPerView = getItemsPerView();
-  const totalItems = categoryData.length;
+  
+  // Calculate item width based on container width and items per view
+  const [itemWidth, setItemWidth] = useState(0);
+  const containerRef = useRef(null);
+  
+  // Update item width when container size changes
+  useEffect(() => {
+    const updateItemWidth = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        setItemWidth(containerWidth / itemsPerView);
+      }
+    };
+    
+    // Initial calculation
+    updateItemWidth();
+    
+    // Update on resize
+    const handleResize = () => {
+      updateItemWidth();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [itemsPerView]);
 
   const handleNext = () => {
-    if (scrollPosition < totalItems - itemsPerView) {
-      setScrollPosition(scrollPosition + 1);
+    if (isAnimating || categories.length === 0) return;
+    
+    setIsAnimating(true);
+    setScrollPosition(prev => prev + 1);
+    
+    // If we're nearing the end of the duplicated list, seamlessly jump back
+    if (scrollPosition >= duplicatedCategories.length - itemsPerView - 5) {
+      setTimeout(() => {
+        // Disable animation temporarily
+        if (carouselContentRef.current) {
+          carouselContentRef.current.style.transition = 'none';
+        }
+        setScrollPosition(categories.length);
+        
+        // Re-enable animation after DOM update
+        setTimeout(() => {
+          if (carouselContentRef.current) {
+            carouselContentRef.current.style.transition = 'transform 0.5s ease';
+          }
+          setIsAnimating(false);
+        }, 50);
+      }, 500); // Wait for animation to complete
+    } else {
+      setTimeout(() => setIsAnimating(false), 500);
     }
   };
 
   const handlePrev = () => {
-    if (scrollPosition > 0) {
-      setScrollPosition(scrollPosition - 1);
+    if (isAnimating || categories.length === 0) return;
+    
+    setIsAnimating(true);
+    setScrollPosition(prev => prev - 1);
+    
+    // If we're nearing the beginning of the duplicated list, seamlessly jump to end
+    if (scrollPosition <= 5) {
+      setTimeout(() => {
+        // Disable animation temporarily
+        if (carouselContentRef.current) {
+          carouselContentRef.current.style.transition = 'none';
+        }
+        setScrollPosition(duplicatedCategories.length - categories.length - itemsPerView);
+        
+        // Re-enable animation after DOM update
+        setTimeout(() => {
+          if (carouselContentRef.current) {
+            carouselContentRef.current.style.transition = 'transform 0.5s ease';
+          }
+          setIsAnimating(false);
+        }, 50);
+      }, 500); // Wait for animation to complete
+    } else {
+      setTimeout(() => setIsAnimating(false), 500);
     }
   };
+
+  // Set up auto-play for the carousel
+  useEffect(() => {
+    if (categories.length === 0) return;
+    
+    const interval = setInterval(() => {
+      handleNext();
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [scrollPosition, isAnimating, categories.length]);
+
+  // Format category name for use in URLs
+  const formatCategorySlug = (name) => {
+    return name.toLowerCase().replace(/\s+/g, "-");
+  };
+
+  if (loading) {
+    return (
+      <CategorySection>
+        <Container>
+          <SectionTitle variant="h4">Shop By Category</SectionTitle>
+          <LoadingContainer>
+            <CircularProgress />
+          </LoadingContainer>
+        </Container>
+      </CategorySection>
+    );
+  }
+
+  if (error) {
+    return (
+      <CategorySection>
+        <Container>
+          <SectionTitle variant="h4">Shop By Category</SectionTitle>
+          <Box sx={{ textAlign: 'center', py: 3 }}>
+            <Typography color="error">Error loading categories: {error}</Typography>
+          </Box>
+        </Container>
+      </CategorySection>
+    );
+  }
 
   return (
     <CategorySection>
@@ -126,38 +292,47 @@ const ShopByCategory = () => {
         <SectionTitle variant="h4">Shop By Category</SectionTitle>
 
         <Box sx={{ position: "relative" }}>
-          {scrollPosition > 0 && (
-            <ArrowButton
-              onClick={handlePrev}
-              sx={{ left: { xs: -16, md: -20 } }}
-              size="small"
-            >
-              <ArrowBackIosNewIcon fontSize="small" />
-            </ArrowButton>
-          )}
+          <ArrowButton
+            onClick={handlePrev}
+            sx={{ 
+              left: { xs: -16, md: -20 },
+              opacity: isAnimating ? 0.5 : 1,
+              pointerEvents: isAnimating ? 'none' : 'auto'
+            }}
+            size="small"
+          >
+            <ArrowBackIosNewIcon fontSize="small" />
+          </ArrowButton>
 
-          <CarouselContainer>
+          <CarouselContainer ref={containerRef}>
             <CarouselContent
-              ref={carouselRef}
+              ref={carouselContentRef}
               sx={{
-                transform: `translateX(-${scrollPosition * 160}px)`,
+                transform: `translateX(-${scrollPosition * itemWidth}px)`,
+                width: '100%',
               }}
             >
-              {categoryData.map((category, index) => (
+              {duplicatedCategories.map((category, index) => (
                 <Link
-                  to={category.path}
+                  to={`/category/${category._id === 'all' ? 'all' : formatCategorySlug(category.name)}`}
                   key={index}
-                  style={{ textDecoration: "none" }}
+                  style={{ 
+                    textDecoration: "none", 
+                    flex: `0 0 ${100/itemsPerView}%`,
+                    maxWidth: `${100/itemsPerView}%`,
+                    padding: "0 8px",
+                    boxSizing: "border-box"
+                  }}
                 >
                   <CategoryCard>
                     <CategoryImage
                       component="img"
-                      image={category.image}
-                      alt={category.label}
+                      image={category.image_link}
+                      alt={category.name}
                     />
-                    <CardContent>
+                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                       <CategoryName variant="body2">
-                        {category.label}
+                        {category.name}
                       </CategoryName>
                     </CardContent>
                   </CategoryCard>
@@ -166,15 +341,17 @@ const ShopByCategory = () => {
             </CarouselContent>
           </CarouselContainer>
 
-          {scrollPosition < totalItems - itemsPerView && (
-            <ArrowButton
-              onClick={handleNext}
-              sx={{ right: { xs: -16, md: -20 } }}
-              size="small"
-            >
-              <ArrowForwardIosIcon fontSize="small" />
-            </ArrowButton>
-          )}
+          <ArrowButton
+            onClick={handleNext}
+            sx={{ 
+              right: { xs: -16, md: -20 },
+              opacity: isAnimating ? 0.5 : 1,
+              pointerEvents: isAnimating ? 'none' : 'auto'
+            }}
+            size="small"
+          >
+            <ArrowForwardIosIcon fontSize="small" />
+          </ArrowButton>
         </Box>
       </Container>
     </CategorySection>

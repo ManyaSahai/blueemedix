@@ -17,99 +17,135 @@ import MapIcon from '@mui/icons-material/Map';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StoreIcon from '@mui/icons-material/Store';
 import StarIcon from '@mui/icons-material/Star';
-export default function Header(){
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import Collapse from '@mui/material/Collapse';
 
+export default function Header() {
     const [open, setOpen] = React.useState(false);
+    const [specialProductOpen, setSpecialProductOpen] = React.useState(false); // State for dropdown
+
     const toggleDrawer = (newOpen) => () => {
         setOpen(newOpen);
     };
 
+    const handleSpecialProductClick = () => {
+        setSpecialProductOpen(!specialProductOpen);
+    };
+
     const DrawerItems = [
-      {
-        label: "Dashboard",
-        icon: BarChartIcon,
-        path: "dashboard"
+        {
+            label: "Dashboard",
+            icon: BarChartIcon,
+            path: "dashboard"
+        },
+        {
+            label: "Customers",
+            icon: PeopleIcon,
+            path: "users"
+        },
+        {
+            label: "Orders",
+            icon: InventoryIcon,
+            path: "orders"
+        },
+        {
+            label: "Offers",
+            icon: LocalOfferIcon,
+            path: "offers"
+        },
+        {
+            label: "Products",
+            icon: InventoryIcon,
+            path: "products"
+        },
+        {
+            label: "Regional admin",
+            icon: MapIcon,
+            path: "regAdminList"
+        },
+        {
+            label: "Reports",
+            icon: BarChartIcon,
+            path: "reports"
+        },
+        {
+            label: "Sellers",
+            icon: StoreIcon,
+            path: "sellers"
+        },
+        {
+          label: "Category",
+          icon: InventoryIcon,
+          path: "category"
       },
-      {
-        label: "Customers",
-        icon: PeopleIcon,
-        path: "users"
-      },
-      {
-        label: "Orders",
-        icon: InventoryIcon,
-        path: "orders"
-      },
-      {
-        label: "Offers",
-        icon: LocalOfferIcon,
-        path: "offers"
-      },
-      {
-        label: "Products",
-        icon: InventoryIcon,
-        path: "products"
-      },
-      {
-        label: "Regional admin",
-        icon: MapIcon,
-        path: "regAdminList"
-      },
-      {
-        label: "Reports",
-        icon: BarChartIcon,
-        path: "reports"
-      },
-      {
-        label: "Sellers",
-        icon: StoreIcon,
-        path: "sellers"
-      },
-      {
-        label: "Special Product",
-        icon: StarIcon,
-        path: "special-product"
-      }
+        {
+            label: "Special Product",
+            icon: StarIcon,
+            children: [
+                // { label: "Bluemedix Products", path: "bluemedix-products" },
+                { label: "Top Selling Products", path: "top-selling-products" },
+                // { label: "Today's Special Products", path: "todays-special-products" },
+                // { label: "Popular Products", path: "popular-products" },
+            ]
+        }
     ];
-    
 
-      
+    const DrawerList = (
+        <Box
+            sx={{ width: 250 }}
+            role="presentation"
+            // Removed onClick={toggleDrawer(false)} here
+        >
+            <List>
+                {DrawerItems.map((item) => (
+                    <React.Fragment key={item.label}>
+                        {item.children ? ( // Render dropdown if it has children
+                            <>
+                                <ListItemButton onClick={handleSpecialProductClick}>
+                                    <ListItemIcon>
+                                        <item.icon />
+                                    </ListItemIcon>
+                                    <ListItemText primary={item.label} sx={{ color: "#333" }} />
+                                    {specialProductOpen ? <ExpandLess /> : <ExpandMore />}
+                                </ListItemButton>
+                                <Collapse in={specialProductOpen} timeout="auto" unmountOnExit>
+                                    <List component="div" disablePadding>
+                                        {item.children.map((child) => (
+                                            <ListItem key={child.label} disablePadding component={NavLink} to={`/admin/${child.path}`} onClick={toggleDrawer(false)}> {/* Added onClick here */}
+                                                <ListItemButton sx={{ pl: 4 }}>
+                                                    <ListItemText primary={child.label} sx={{ color: "#333" }} />
+                                                </ListItemButton>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Collapse>
+                            </>
+                        ) : (
+                            <ListItem disablePadding component={NavLink} to={`/admin/${item.path}`} onClick={toggleDrawer(false)}> {/* Added onClick here */}
+                                <ListItemButton>
+                                    <ListItemIcon>
+                                        <item.icon />
+                                    </ListItemIcon>
+                                    <ListItemText primary={item.label} sx={{ color: "#333" }} />
+                                </ListItemButton>
+                            </ListItem>
+                        )}
+                        <Divider />
+                    </React.Fragment>
+                ))}
+            </List>
+        </Box>
+    );
 
-  const DrawerList = (
-    <Box
-      sx={{ width: 250 }}
-      role="presentation"
-      onClick={toggleDrawer(false)}
-    >
-      <List>
-        {DrawerItems.map((item) => (
-          <React.Fragment key={item.label}>
-            <ListItem disablePadding component={NavLink} to={`/admin/${item.path}`}>
-              <ListItemButton>
-                <ListItemIcon>
-                  <item.icon />
-                </ListItemIcon>
-                <ListItemText primary={item.label} sx={{color:"#333"}} />
-              </ListItemButton>
-            </ListItem>
-            <Divider />
-          </React.Fragment>
-        ))}
-      </List>
-    </Box>
-  );
-  
-    
-
-    return(
-    <div>
-        <IconButton onClick={toggleDrawer(true)}>
-            <MenuIcon/>
-        </IconButton>
-        <Drawer open={open} onClose={toggleDrawer(false)}>
-            {DrawerList}
-        </Drawer>
-        
-    </div>
+    return (
+        <div>
+            <IconButton onClick={toggleDrawer(true)}>
+                <MenuIcon />
+            </IconButton>
+            <Drawer open={open} onClose={toggleDrawer(false)}>
+                {DrawerList}
+            </Drawer>
+        </div>
     );
 }

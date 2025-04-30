@@ -71,10 +71,11 @@ function UserManagement() {
     };
 
     const getVerificationIcon = (status) => {
-        switch (status) {
-            case "Approved":
+        const lowerCaseStatus = status.toLowerCase();
+        switch (lowerCaseStatus) {
+            case "approved":
                 return <CheckCircle style={{ color: green[500] }} />;
-            case "Rejected":
+            case "rejected":
                 return <Cancel style={{ color: red[500] }} />;
             default:
                 return <Pending style={{ color: grey[500] }} />;
@@ -82,10 +83,11 @@ function UserManagement() {
     };
 
     const getVerificationText = (status) => {
-        switch (status) {
-            case "Approved":
+        const lowerCaseStatus = status.toLowerCase();
+        switch (lowerCaseStatus) {
+            case "approved":
                 return "Approved";
-            case "Rejected":
+            case "rejected":
                 return "Rejected";
             default:
                 return "Pending";

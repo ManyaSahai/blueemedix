@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   AppBar,
   Toolbar,
@@ -34,7 +34,7 @@ import { Link, useNavigate } from "react-router-dom";
 const NavbarContainer = styled(AppBar)(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
   color: theme.palette.text.primary,
-  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.15)", // Slightly stronger box shadow
   position: "static",
 }));
 
@@ -116,8 +116,7 @@ const SearchCategoryDropDown = [
   "Health Conditions",
   "Other",
 ];
-export const sortedSearchCategoryDropDown =
-  SearchCategoryDropDown.slice().sort();
+export const sortedSearchCategoryDropDown = SearchCategoryDropDown.slice().sort();
 
 const Navigation = [
   {
@@ -145,14 +144,26 @@ const Navigation = [
 // Main component
 const Navbar = () => {
   const [searchCategory, setSearchCategory] = useState("All");
-  const [categoryHovered, setCategoryHovered] = useState(false);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false); // New state
+  const [categoryAnchorEl, setCategoryAnchorEl] = useState(null); // New state for anchor
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
   const navigate = useNavigate();
+  const categoryDropdownRef = useRef(null); // Ref for the dropdown
 
   const handleCategoryChange = (event) => {
     setSearchCategory(event.target.value);
+  };
+
+  const handleCategoryClick = (event) => {
+    setCategoryAnchorEl(event.currentTarget);
+    setCategoryMenuOpen(!categoryMenuOpen);
+  };
+
+  const handleCategoryMenuClose = () => {
+    setCategoryMenuOpen(false);
+    setCategoryAnchorEl(null);
   };
 
   const handleProfileClick = (event) => {
@@ -170,9 +181,28 @@ const Navbar = () => {
 
   const handleLogout = () => {
     setProfileMenuAnchor(null);
-    // Add your logout logic here
+    // Add your logout logic here (e.g., clear local storage, API call)
     alert("Logged out successfully!");
   };
+
+  // Close the category dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target) &&
+        categoryAnchorEl &&
+        !categoryAnchorEl.contains(event.target)
+      ) {
+        setCategoryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [categoryAnchorEl, categoryDropdownRef]);
 
   return (
     <NavbarContainer sx={{ paddingY: "8px" }}>
@@ -207,13 +237,11 @@ const Navbar = () => {
               disableUnderline
               sx={{ borderRight: "1px solid #ccc", marginLeft: "20px" }}
             >
-              {sortedSearchCategoryDropDown.map((item) => {
-                return (
-                  <MenuItem value={item} key={item}>
-                    {item}
-                  </MenuItem>
-                );
-              })}
+              {sortedSearchCategoryDropDown.map((item) => (
+                <MenuItem value={item} key={item}>
+                  {item}
+                </MenuItem>
+              ))}
             </Select>
           </StyledFormControl>
           <StyledInputBase
@@ -241,52 +269,54 @@ const Navbar = () => {
                     display: "flex",
                     flexDirection: "column",
                     gap: "2px",
+                    cursor: "pointer", // Indicate it's clickable
                   }}
-                  onMouseEnter={() => setCategoryHovered(true)}
-                  onMouseLeave={() => setCategoryHovered(false)}
+                  onClick={handleCategoryClick} // Use onClick
+                  aria-controls={categoryMenuOpen ? "category-menu" : undefined}
+                  aria-expanded={categoryMenuOpen ? "true" : "false"}
                 >
                   <CircleIconButton size="small">
                     {navItem.icon}
                   </CircleIconButton>
                   <Typography variant="body2">{navItem.label}</Typography>
 
-                  {/* Dropdown Box */}
-                  {categoryHovered && (
-                    <Box
-                      onMouseEnter={() => setCategoryHovered(true)}
-                      onMouseLeave={() => setCategoryHovered(false)}
-                      sx={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        backgroundColor: "#fff",
-                        border: "1px solid #ddd",
-                        borderRadius: "4px",
-                        padding: 2,
-                        boxShadow: 3,
-                        zIndex: 1000,
-                        minWidth: "200px",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 1,
+                  {/* Dropdown Box (now controlled by state) */}
+                  <Box
+                    ref={categoryDropdownRef}
+                    open={categoryMenuOpen}
+                    onClose={handleCategoryMenuClose}
+                    sx={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      backgroundColor: "#fff",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      padding: 2,
+                      boxShadow: 3,
+                      zIndex: 1000,
+                      minWidth: "200px",
+                      display: categoryMenuOpen ? "flex" : "none", // Control visibility
+                      flexDirection: "column",
+                      gap: 1,
+                    }}
+                  >
+                    {sortedSearchCategoryDropDown.map((item) => (
+                      <Typography
+                        variant="body2"
+                        key={item}
+                        sx={{ cursor: "pointer", padding: "4px 8px" }}
+                        onClick={() => {
+                          // Handle category selection (e.g., navigate)
+                          console.log(`Selected category: ${item}`);
+                          navigate(`/category/${item.toLowerCase().replace(/\s+/g, '-')}`);
+                          setCategoryMenuOpen(false); // Close on selection
                         }}
                       >
-                        {sortedSearchCategoryDropDown.map((item) => (
-                          <Typography
-                            variant="body2"
-                            key={item}
-                            sx={{ cursor: "pointer" }}
-                          >
-                            {item}
-                          </Typography>
-                        ))}
-                      </Box>
-                    </Box>
-                  )}
+                        {item}
+                      </Typography>
+                    ))}
+                  </Box>
                 </NavItem>
               );
             }
@@ -296,8 +326,10 @@ const Navbar = () => {
               return (
                 <NavItem
                   key={navItem.label}
-                  sx={{ display: "flex", flexDirection: "column", gap: "2px" }}
+                  sx={{ display: "flex", flexDirection: "column", gap: "2px", cursor: "pointer" }}
                   onClick={handleProfileClick}
+                  aria-controls={profileMenuAnchor ? "profile-menu" : undefined}
+                  aria-expanded={Boolean(profileMenuAnchor) ? "true" : "false"}
                 >
                   <CircleIconButton size="small">
                     {navItem.icon}
@@ -317,6 +349,7 @@ const Navbar = () => {
                       vertical: "top",
                       horizontal: "right",
                     }}
+                    id="profile-menu"
                   >
                     <Box sx={{ px: 2, py: 1 }}>
                       <Typography variant="subtitle1">John Doe</Typography>

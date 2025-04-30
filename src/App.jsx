@@ -32,6 +32,7 @@ import CustomerDashboard from "./components/CustomerDashboard.jsx";
 import TopSellingProducts from "./components/SuperAdminDashboard/SpecialProducts/TopSelling.jsx";
 import CategoryList from "./components/SuperAdminDashboard/Category.jsx";
 import OrderDetails from "./pages/SellerDashboard/OrderDetails.jsx";
+import ProfilePage from "./components/Profile/Profile.jsx";
 
 store.dispatch(getDashboardData());
 store.dispatch(getOrders());
@@ -41,7 +42,7 @@ function App() {
     location.pathname.startsWith("/regionalAdmin") ||
     location.pathname.startsWith("/seller") ||
     location.pathname.startsWith("/regional-admin") ||
-    location.pathname.startsWith("/admin");
+    location.pathname.startsWith("/admin")||
   location.pathname.startsWith("/dashboard");
 
   return (
@@ -86,6 +87,7 @@ function App() {
           <Route path="regAdminList" element={<RegionalAdminList/>} />
           <Route path="top-selling-products" element={<TopSellingProducts />} />
           <Route path="category" element={<CategoryList />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="admin" element={<SuperAdmin />} />
         </Route>
       </Routes>

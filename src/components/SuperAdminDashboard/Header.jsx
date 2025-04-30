@@ -7,7 +7,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import {
   IconButton,
@@ -18,6 +18,9 @@ import {
   Badge,
   Menu,
   MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import PeopleIcon from "@mui/icons-material/People";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
@@ -32,11 +35,20 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import MailIcon from "@mui/icons-material/Mail";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
+// Define the dropdown options with their labels and paths
+const specialProductOptions = [
+  { label: "Top-Selling Products", path: "top-selling-products" },
+  { label: "Featured Products", path: "featured" },
+  { label: "Recently Added", path: "recently-added" },
+];
+
 export default function Header() {
   const [open, setOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [notificationAnchor, setNotificationAnchor] = React.useState(null);
   const [messageAnchor, setMessageAnchor] = React.useState(null);
+  const [selectedSpecialProduct, setSelectedSpecialProduct] = React.useState("");
+  const navigate = useNavigate();
 
   const isMenuOpen = Boolean(anchorEl);
   const isNotificationMenuOpen = Boolean(notificationAnchor);
@@ -64,6 +76,32 @@ export default function Header() {
     setOpen(newOpen);
   };
 
+  const handleSpecialProductChange = (event) => {
+    const selectedPath = event.target.value;
+    setSelectedSpecialProduct(selectedPath);
+    if (selectedPath) {
+      navigate(`/admin/${selectedPath}`);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('name')
+    localStorage.removeItem('number')
+    localStorage.removeItem('region')
+    localStorage.removeItem('role')
+    localStorage.removeItem('email')
+    localStorage.removeItem('customerAddress')
+    console.log("Logging out");
+    navigate("/");
+  };
+
+  const handleProfileClick = () => {
+    navigate("/admin/profile");
+    handleMenuClose();
+  };
+
   const DrawerItems = [
     { label: "Dashboard", icon: DashboardIcon, path: "dashboard" },
     { label: "Customers", icon: PeopleIcon, path: "users" },
@@ -73,12 +111,36 @@ export default function Header() {
     { label: "Regional admin", icon: MapIcon, path: "regAdminList" },
     { label: "Reports", icon: BarChartIcon, path: "reports" },
     { label: "Sellers", icon: StoreIcon, path: "sellers" },
-    { label: "Special Product", icon: StarIcon, path: "special-product" },
+    {
+      label: "Special Product",
+      icon: StarIcon,
+      dropdown: (
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="special-product-label">Special Products</InputLabel>
+          <Select
+            labelId="special-product-label"
+            id="special-product-select"
+            value={selectedSpecialProduct}
+            label="Special Products"
+            onChange={handleSpecialProductChange}
+          >
+            <MenuItem value="None">
+              <em>None</em>
+            </MenuItem>
+            {specialProductOptions.map((option) => (
+              <MenuItem key={option.path} value={option.path}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      ),
+    },
   ];
 
   // Group items by category
   const mainMenuItems = DrawerItems.slice(0, 5);
-  const adminMenuItems = DrawerItems.slice(5);
+  const adminMenuItems = DrawerItems.slice(5, 8);
 
   const DrawerList = (
     <Box
@@ -195,6 +257,18 @@ export default function Header() {
             </ListItemButton>
           </ListItem>
         ))}
+        {/* Special Product with Dropdown */}
+        <ListItem key="special-product" disablePadding>
+          <ListItemButton sx={{ flexDirection: "column", alignItems: "flex-start", padding: "8px 16px" }}>
+            <Box sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}>
+              <ListItemIcon sx={{ minWidth: "42px" }}>
+                <StarIcon />
+              </ListItemIcon>
+              <ListItemText primary="Special Product" sx={{ color: "#333" }} />
+            </Box>
+            {DrawerItems.find((item) => item.label === "Special Product")?.dropdown}
+          </ListItemButton>
+        </ListItem>
       </List>
 
       {/* Footer area with version info */}
@@ -229,11 +303,11 @@ export default function Header() {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleMenuClose}>My Account</MenuItem>
+      <MenuItem onClick={handleProfileClick}>Profile</MenuItem>
+      {/* <MenuItem onClick={handleMenuClose}>My Account</MenuItem> */}
       <Divider />
-      <MenuItem onClick={handleMenuClose}>Settings</MenuItem>
-      <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
+      {/* <MenuItem onClick={handleMenuClose}>Settings</MenuItem> */}
+      <MenuItem onClick={handleLogout}>Logout</MenuItem>
     </Menu>
   );
 
@@ -340,18 +414,18 @@ export default function Header() {
               fontWeight: "bold",
             }}
           >
-            ADMIN DASHBOARD
+            BLUEMEDIX ADMIN DASHBOARD
           </Typography>
 
           <Box sx={{ flexGrow: 1 }} />
 
           {/* Search Icon */}
-          <IconButton size="large" color="inherit">
+          {/* <IconButton size="large" color="inherit">
             <SearchIcon />
-          </IconButton>
+          </IconButton> */}
 
           {/* Notifications */}
-          <IconButton
+          {/* <IconButton
             size="large"
             color="inherit"
             onClick={handleNotificationMenuOpen}
@@ -359,10 +433,10 @@ export default function Header() {
             <Badge badgeContent={4} color="error">
               <NotificationsIcon />
             </Badge>
-          </IconButton>
+          </IconButton> */}
 
           {/* Messages */}
-          <IconButton
+          {/* <IconButton
             size="large"
             color="inherit"
             onClick={handleMessageMenuOpen}
@@ -370,7 +444,7 @@ export default function Header() {
             <Badge badgeContent={3} color="primary">
               <MailIcon />
             </Badge>
-          </IconButton>
+          </IconButton> */}
 
           {/* Profile */}
           <IconButton

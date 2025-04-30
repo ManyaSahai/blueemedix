@@ -16,16 +16,33 @@ export const cartApi = createApi({
         body: { userId, productId, quantity },
       }),
     }),
-
+    
     // Get all cart items for a specific user
     getCart: builder.query({
       query: (userId) => `/cart/${userId}`,
     }),
-
+    
     // Delete an item from the cart
     deleteCartItem: builder.mutation({
       query: ({ userId, productId }) => ({
         url: `/cart/${userId}/${productId}`,
+        method: 'DELETE',
+      }),
+    }),
+
+    // Update cart item quantity
+    updateCartItem: builder.mutation({
+      query: ({ userId, productId, quantityChange }) => ({
+        url: `cart/${userId}/${productId}`,
+        method: 'PUT',
+        body: { quantityChange },
+      }),
+    }),
+
+    // Clear the entire cart
+    clearCart: builder.mutation({
+      query: (userId) => ({
+        url: `/cart/delete/cart/${userId}`,
         method: 'DELETE',
       }),
     }),
@@ -36,4 +53,6 @@ export const {
   useAddItemToCartMutation,
   useGetCartQuery,
   useDeleteCartItemMutation,
+  useUpdateCartItemMutation,
+  useClearCartMutation,
 } = cartApi;

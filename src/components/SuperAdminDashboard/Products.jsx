@@ -315,7 +315,7 @@ export default function Products() {
     };
 
     return (
-        <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Container maxWidth={false} sx={{ py: 3 }}>
             <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} flexWrap="wrap">
                     <Typography variant="h5">Product List</Typography>

@@ -7,15 +7,15 @@ import BluemedixProducts from "../../components/BluemedixProducts.jsx";
 const HomePage = () => {
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "white" }}>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth={false} sx={{ py: 4 }}>
         <ShopByCategory />
       </Container>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth={false} sx={{ py: 4 }}>
         <WhyChooseUs />
       </Container>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth={false} sx={{ py: 4 }}>
         <BluemedixProducts />
       </Container>
     </Box>

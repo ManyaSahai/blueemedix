@@ -48,6 +48,7 @@ import {
   Payment,
 } from "@mui/icons-material";
 import { useGetOrdersByUserQuery , useGetOrderByIdQuery} from "../redux/ordersApi";
+import Navbar from "./Navbar";
 // import Orders from "./Orders";
 
 const DashboardContainer = styled(Container)(({ theme }) => ({
@@ -146,7 +147,8 @@ const phone_no = localStorage.getItem("number");
   };
 
   return (
-    <DashboardContainer maxWidth="xl">
+    <DashboardContainer maxWidth={false}>
+      <Navbar />
       {/* Header with back button and profile */}
       <Box
         sx={{

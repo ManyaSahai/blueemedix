@@ -1,4 +1,4 @@
-import React, { useState , useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -22,10 +22,11 @@ import {
   Paper,
 } from "@mui/material";
 import { usePlaceOrderMutation } from "../redux/ordersApi";
-
+import { useClearCartMutation } from "../redux/cartApi";
 
 const steps = ["Shipping Information", "Payment Method", "Review Order"];
-const storedAddress = localStorage.getItem("customerAddress") ? JSON.parse(localStorage.getItem("customerAddress"))
+const storedAddress = localStorage.getItem("customerAddress")
+  ? JSON.parse(localStorage.getItem("customerAddress"))
   : null;
 
 const name = localStorage.getItem("name");
@@ -33,12 +34,12 @@ const e_mail = localStorage.getItem("email");
 const phone_no = localStorage.getItem("number");
 const userId = localStorage.getItem("userId");
 
-
-const CheckoutPage = ({cartData}) => {
+const CheckoutPage = ({ prescriptions, cartData, onOrderComplete }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("upi");
   const [upiId, setUpiId] = useState("");
   const [placeOrder, { isLoading, isSuccess, isError, error }] = usePlaceOrderMutation();
+  const [clearCart] = useClearCartMutation();
   const [upiError, setUpiError] = useState("");
   const [address, setAddress] = useState({
     first_line: storedAddress?.first_line || "",
@@ -52,23 +53,7 @@ const CheckoutPage = ({cartData}) => {
     e_mail: e_mail || "",
     phone_no: phone_no || ""
   });
-  const cart = cartData.cart;
-// console.log("cart from checkout", cart)
-// console.log(cart[0].product.price.$numberDecimal)
-
-  // Cart items from your page
-  // const cartItems = [
-  //   {
-  //     name: "Swadeshi Haritaki Churna Pack of 2",
-  //     price: 0,
-  //     quantity: 1,
-  //   },
-  //   {
-  //     name: "Biotique Bio Citron Stimulating Body Massage Oil",
-  //     price: 0,
-  //     quantity: 1,
-  //   },
-  // ];
+  const cart = cartData?.cart || [];
 
   const handleNext = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -91,6 +76,7 @@ const CheckoutPage = ({cartData}) => {
       return ""; // No error
     }
   };
+  
   const handleUpiIdChange = (e) => {
     const value = e.target.value;
     setUpiId(value);
@@ -98,90 +84,107 @@ const CheckoutPage = ({cartData}) => {
     const error = validateUpiId(value);
     setUpiError(error);
   };
+  
+  const handleContinueShopping = () => {
+    if (typeof onOrderComplete === 'function') {
+      onOrderComplete();
+    }
+    window.location.href = "/";
+  };
 
   const handlePlaceOrder = async () => {
-    // Calculate the total amount dynamically based on cart items
-    const totalAmount = cart.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    ) + 50; // Add shipping cost
+    // Log raw cart data to inspect its structure
+    console.log("Raw cart data:", cart);
     
+    // Format the products array as expected by the API
+    const products = cart.map(item => {
+      console.log("Cart item:", item);
+      
+      // Get the product ID using the first available property
+      const productId = item.product._id || item.product.id || item.productId || item.product.productId;
+      
+      return {
+        productId: productId,
+        quantity: item.quantity
+      };
+    });
+    
+    console.log("Formatted products:", products);
+    
+    // Create the order data exactly in the format expected by the API
+    // Convert products array to a JSON string as required by the API
     const orderData = {
-      user: userId, // User ID from localStorage
-      address,
-      cart, 
-      payment: {
-        method: paymentMethod,
-        upiId: paymentMethod.toLowerCase() === "upi" ? upiId : null,
-      },
-      totalAmount, // Calculated dynamically
+      userId: userId,
+      products: JSON.stringify(products),
+      payment_method: paymentMethod,
+      ...(paymentMethod === "upi" && { upi_id: upiId }),
+      ...(prescriptions && prescriptions.length > 0 && { 
+        prescription_image: prescriptions.length > 0 ? prescriptions[0] : ""
+      })
     };
-    console.log(orderData)
+    
+    // Log the final orderData being sent to the API
+    console.log("Order data being sent:", JSON.stringify(orderData, null, 2));
+    
     try {
-      // Place order by calling the mutation
-      const res = await placeOrder(orderData).unwrap();
-      console.log("Order placed successfully:", res);
+      console.log("Sending order data:", orderData);
+      const response = await placeOrder(orderData).unwrap();
+      console.log("Order placed successfully:", response);
+      
+      // Clear the cart after successful order placement
+      try {
+        await clearCart(userId).unwrap();
+        console.log("Cart cleared successfully");
+      } catch (clearErr) {
+        console.error("Error clearing cart:", clearErr);
+      }
+      
       setActiveStep((prev) => prev + 1);
     } catch (err) {
-      // Log the error for debugging
       console.error("Error placing order:", err);
-    
-      // Check if the error contains a response object
+      
       if (err.response) {
-        console.error("API Error response data:", err.response.data);
-        alert(`Order placement failed: ${err.response.data.message || 'An error occurred.'}`);
+        alert(`Order placement failed: ${err.response.data?.message || 'An error occurred.'}`);
       } else if (err.message) {
-        console.error("Error message:", err.message);
         alert(`An error occurred while placing your order: ${err.message}`);
       } else {
-        console.error("Unknown error occurred:", err);
         alert("An unknown error occurred. Please try again later.");
       }
     }
   };
   
-  
-  
   useEffect(() => {
     if (isSuccess) {
       console.log("Order placed successfully!");
-      
     }
   
     if (isError) {
       console.error("Order placement failed:", error);
-      
     }
   }, [isSuccess, isError, error]);
-  
+
+  // Save address to localStorage when it changes
+  useEffect(() => {
+    if (address.first_line && address.city && address.state && address.pin_code) {
+      localStorage.setItem("customerAddress", JSON.stringify(address));
+    }
+  }, [address]);
 
   const renderShippingForm = () => (
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6}>
-      <TextField
-        required
-        id="name"
-        name="name"
-        label="Name"
-        fullWidth
-        autoComplete="given-name"
-        variant="outlined"
-        value={user.name}  // Bind the value to the user.name state
-        onChange={(e) => setUser((prev) => ({ ...prev, name: e.target.value }))}  // Update state when the user types
-      />
-
-      </Grid>
-      {/* <Grid item xs={12} sm={6}>
         <TextField
           required
-          id="lastName"
-          name="lastName"
-          label="Last Name"
+          id="name"
+          name="name"
+          label="Name"
           fullWidth
-          autoComplete="family-name"
+          autoComplete="given-name"
           variant="outlined"
+          value={user.name}
+          onChange={(e) => setUser((prev) => ({ ...prev, name: e.target.value }))}
         />
-      </Grid> */}
+      </Grid>
       <Grid item xs={12}>
         <TextField
           required
@@ -190,7 +193,7 @@ const CheckoutPage = ({cartData}) => {
           label="Email Address"
           fullWidth
           value={user.e_mail}
-          onChange={(e)=> setUser((prev) => ({...prev, e_mail: e.target.value}))}
+          onChange={(e) => setUser((prev) => ({ ...prev, e_mail: e.target.value }))}
           autoComplete="email"
           variant="outlined"
         />
@@ -282,7 +285,7 @@ const CheckoutPage = ({cartData}) => {
           label="Phone Number"
           fullWidth
           value={user.phone_no}
-          onChange={(e)=> setUser((prev) => ({...prev, phone_no: e.target.value}))}
+          onChange={(e) => setUser((prev) => ({ ...prev, phone_no: e.target.value }))}
           autoComplete="tel"
           variant="outlined"
         />
@@ -307,54 +310,13 @@ const CheckoutPage = ({cartData}) => {
             control={<Radio />}
             label="UPI Payment"
           />
+          <FormControlLabel
+            value="cod"
+            control={<Radio />}
+            label="Cash on Delivery"
+          />
         </RadioGroup>
       </Grid>
-
-      {/*{paymentMethod === "card" && (
-        <>
-          <Grid item xs={12}>
-            <TextField
-              required
-              id="cardName"
-              label="Name on card"
-              fullWidth
-              autoComplete="cc-name"
-              variant="outlined"
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              required
-              id="cardNumber"
-              label="Card number"
-              fullWidth
-              autoComplete="cc-number"
-              variant="outlined"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              required
-              id="expDate"
-              label="Expiry date (MM/YY)"
-              fullWidth
-              autoComplete="cc-exp"
-              variant="outlined"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              required
-              id="cvv"
-              label="CVV"
-              helperText="Last three digits on signature strip"
-              fullWidth
-              autoComplete="cc-csc"
-              variant="outlined"
-            />
-          </Grid>
-        </>
-      )}*/}
 
       {paymentMethod === "upi" && (
         <Grid item xs={12}>
@@ -372,25 +334,6 @@ const CheckoutPage = ({cartData}) => {
           />
         </Grid>
       )}
-
-      {/* {paymentMethod === "netbanking" && (
-        <Grid item xs={12}>
-          <FormControl fullWidth>
-            <InputLabel id="bank-select-label">Select Bank</InputLabel>
-            <Select
-              labelId="bank-select-label"
-              id="bank-select"
-              label="Select Bank"
-            >
-              <MenuItem value="sbi">State Bank of India</MenuItem>
-              <MenuItem value="hdfc">HDFC Bank</MenuItem>
-              <MenuItem value="icici">ICICI Bank</MenuItem>
-              <MenuItem value="axis">Axis Bank</MenuItem>
-              <MenuItem value="kotak">Kotak Mahindra Bank</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-      )} */}
     </Grid>
   );
 
@@ -438,7 +381,6 @@ const CheckoutPage = ({cartData}) => {
       </Box>
     );
   };
-  
 
   const renderOrderReview = () => (
     <Grid container spacing={3}>
@@ -467,10 +409,8 @@ const CheckoutPage = ({cartData}) => {
             Payment Method
           </Typography>
           <Typography variant="body2">
-            {paymentMethod === "card" && "Credit/Debit Card ending in 1234"}
-            {paymentMethod === "upi" && `UPI Payment ${upiId}`}
+            {paymentMethod === "upi" && `UPI Payment (${upiId})`}
             {paymentMethod === "cod" && "Cash on Delivery"}
-            {paymentMethod === "netbanking" && "Net Banking (SBI)"}
           </Typography>
         </Paper>
         <Paper variant="outlined" sx={{ p: 2 }}>
@@ -483,11 +423,20 @@ const CheckoutPage = ({cartData}) => {
               sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
             >
               <Typography variant="body2">
-                {item.name} × {item.quantity}
+                {item.product.name} × {item.quantity}
               </Typography>
-              <Typography variant="body2">₹{parseFloat(item.product.price?.$numberDecimal || 0).toFixed(2)}</Typography>
+              <Typography variant="body2">
+                ₹{parseFloat(item.product.price?.$numberDecimal || 0).toFixed(2)}
+              </Typography>
             </Box>
           ))}
+          {prescriptions && prescriptions.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2">
+                Prescription(s) Uploaded: {prescriptions.length}
+              </Typography>
+            </Box>
+          )}
         </Paper>
       </Grid>
     </Grid>
@@ -512,14 +461,14 @@ const CheckoutPage = ({cartData}) => {
         Thank you for your order!
       </Typography>
       <Typography variant="subtitle1">
-        Your order number is #2001539. We have emailed your order confirmation,
+        Your order has been placed successfully. We have emailed your order confirmation,
         and will send you an update when your order has shipped.
       </Typography>
       <Button
         variant="contained"
         color="primary"
         sx={{ mt: 3 }}
-        onClick={() => (window.location.href = "/")}
+        onClick={handleContinueShopping}
       >
         Continue Shopping
       </Button>
@@ -527,7 +476,7 @@ const CheckoutPage = ({cartData}) => {
   );
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom align="center">
         Checkout
       </Typography>
@@ -568,11 +517,13 @@ const CheckoutPage = ({cartData}) => {
                         handleNext(); // Otherwise go to the next step
                       }
                     }}
-                    disabled={isLoading || (paymentMethod === "upi" && !!upiError)}
+                    disabled={
+                      isLoading || 
+                      (paymentMethod === "upi" && activeStep === 1 && !!upiError)
+                    }
                   >
                     {activeStep === steps.length - 1 ? (isLoading ? "Placing Order..." : "Place Order") : "Next"}
                   </Button>
-
                 </Box>
               </CardContent>
             </Card>

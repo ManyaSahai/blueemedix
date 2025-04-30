@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Card,
-    CardContent,
-    CardMedia,
-    Typography,
-    Grid,
-    Container,
-    CircularProgress,
-    Paper,
-    Box,
-} from '@mui/material';
-
+import { Card, CardContent, CardMedia, Typography, Grid, Container, CircularProgress, Paper, Box } from '@mui/material';
 
 const TopSellingProducts = () => {
     const [topProducts, setTopProducts] = useState([]);
@@ -24,18 +13,14 @@ const TopSellingProducts = () => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                // **Important:** Parse the response as JSON
+                
                 const text = await response.text();
                 try {
                     const data = JSON.parse(text);
                     setTopProducts(data);
                 } catch (parseError) {
-                    // Handle the case where the response is not valid JSON
-                    setError(new Error(`Error parsing JSON: ${parseError.message}.  Server response was: ${text}`));
-                    setLoading(false);
-                    return; // Exit the function to prevent further errors
+                    setError(new Error(`Error parsing JSON: ${parseError.message}. Server response was: ${text}`));
                 }
-
             } catch (error) {
                 setError(error);
             } finally {
@@ -148,16 +133,25 @@ const TopSellingProducts = () => {
                                 >
                                     {product.productDetails?.name || "Product Name"}
                                 </Typography>
-                                <Typography
-                                    variant="body1"
-                                    sx={{
-                                        fontWeight: 600,
-                                        color: 'primary.main',
-                                        mt: 'auto',
-                                    }}
-                                >
-                                    ₹ {product.productDetails?.price?. $numberDecimal ?? "0.00"}
-                                </Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 'auto' }}>
+                                    <Typography
+                                        variant="body1"
+                                        sx={{
+                                            fontWeight: 600,
+                                            color: 'primary.main',
+                                        }}
+                                    >
+                                        ₹ {product.productDetails?.price ? product.productDetails.price.toFixed(2) : "0.00"}
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: 'text.secondary',
+                                        }}
+                                    >
+                                        Sold: {product.deliveryCount}
+                                    </Typography>
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>

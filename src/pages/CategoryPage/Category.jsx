@@ -134,10 +134,13 @@ const ProductListingComponent = () => {
 
   const handleAddToCart = (productId, quantity) => {
     const userId = localStorage.getItem("userId");
+    const role = localStorage.getItem("role")
 
-    if (!userId) {
-      console.error("User ID not found");
-      return;
+    if (!userId && role!=='Customer') {
+    alert("Please log in as a customer to add items to your cart.");
+    console.log(role)
+    window.location.href = '/login'; // Basic JavaScript redirect if no router is readily available
+    return;
     }
 
     fetch("http://localhost:5000/api/cart/add", {

@@ -86,7 +86,7 @@ function SellerDashboard() {
 
         if (!orderDetailsMap[orderId]) {
           fetch(`http://localhost:5000/api/orders/${orderId}`, {
-            headers: { Authorization: localStorage.getItem("authToken") || "" },
+            headers: { Authorization: localStorage.getItem("token") || "" },
           })
             .then((res) => res.json())
             .then((data) => {

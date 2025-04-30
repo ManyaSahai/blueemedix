@@ -262,8 +262,8 @@ const ShopByCategory = () => {
 
   if (loading) {
     return (
-      <CategorySection>
-        <Container>
+      <CategorySection maxWidth={false} >
+        <Container height={200}>
           <SectionTitle variant="h4">Shop By Category</SectionTitle>
           <LoadingContainer>
             <CircularProgress />
@@ -275,7 +275,7 @@ const ShopByCategory = () => {
 
   if (error) {
     return (
-      <CategorySection>
+      <CategorySection maxWidth={false}>
         <Container>
           <SectionTitle variant="h4">Shop By Category</SectionTitle>
           <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -287,8 +287,8 @@ const ShopByCategory = () => {
   }
 
   return (
-    <CategorySection>
-      <Container>
+    <CategorySection >
+      <Container maxWidth={false}>
         <SectionTitle variant="h4">Shop By Category</SectionTitle>
 
         <Box sx={{ position: "relative" }}>

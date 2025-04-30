@@ -122,7 +122,7 @@ const Login = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.user.id);
       localStorage.setItem("name", data.user.name);
-      localStorage.setItem("email", data.user.e_mail);
+      localStorage.setItem("email", data.user.email);
       localStorage.setItem("number", data.user.phone_no);
       localStorage.setItem("role", data.user.role);
       localStorage.setItem("region", data.user.region);

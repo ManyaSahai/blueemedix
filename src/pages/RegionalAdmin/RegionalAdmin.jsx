@@ -45,7 +45,7 @@ function RegionalAdminDashboard() {
   const { data: sellersData, error: errorSellers } =
     useFetchAllRegionalSellersQuery(undefined, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `${localStorage.getItem("token")}`,
       },
     });
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("md"));
@@ -129,6 +129,7 @@ function RegionalAdminDashboard() {
   };
 
   return (
+    <Container maxWidth={false}>
     <Box sx={{ display: "flex", height: "100vh" }}>
       {/* Left Sidebar */}
       <Drawer
@@ -314,6 +315,7 @@ function RegionalAdminDashboard() {
         </Alert>
       </Snackbar>
     </Box>
+    </Container>
   );
 }
 

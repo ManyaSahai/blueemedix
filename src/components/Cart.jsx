@@ -1,5 +1,9 @@
 import React, { useState, useRef } from "react";
-import { useGetCartQuery, useDeleteCartItemMutation } from "../redux/cartApi";
+import { 
+  useGetCartQuery, 
+  useDeleteCartItemMutation, 
+  useUpdateCartItemMutation 
+} from "../redux/cartApi";
 import {
   Button,
   Card,
@@ -12,32 +16,85 @@ import {
   IconButton,
   Stack,
   Paper,
+  ButtonGroup,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import CheckoutPage from "./Checkout";
 
 const Cart = () => {
   const userId = localStorage.getItem("userId"); // Get user ID from localStorage
-  const { data: cartItems, error, isLoading } = useGetCartQuery(userId);
+  const { data: cartItems, error, isLoading, refetch } = useGetCartQuery(userId);
   const [deleteCartItem] = useDeleteCartItemMutation(); // Mutation to delete cart items
+  const [updateCartItem] = useUpdateCartItemMutation(); // Mutation to update cart item quantity
   const [showCheckout, setShowCheckout] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef(null);
-  // console.log(cartItems); // Log cartItems to inspect the structure
+  
+  // Create a local state to track cart changes before they're reflected in the API response
+  const [localCart, setLocalCart] = useState(null);
 
+  // Initialize localCart when cartItems are loaded
+  React.useEffect(() => {
+    if (cartItems?.cart) {
+      setLocalCart(cartItems.cart);
+    }
+  }, [cartItems]);
 
-  const handleRemoveItem = (productId) => {
-    deleteCartItem({ userId, productId }) // Remove item from cart
-      .unwrap()
-      .then(() => {
-        alert("Item removed from cart");
-      })
-      .catch((err) => {
-        console.error("Failed to remove item:", err);
-        alert("Error removing item");
-      });
+  const handleRemoveItem = async (productId) => {
+    try {
+      await deleteCartItem({ userId, productId }).unwrap();
+      // Update local cart immediately
+      setLocalCart(prevCart => prevCart.filter(item => {
+        const itemProductId = item.product.id || item.product._id;
+        return itemProductId !== productId;
+      }));
+      // Refetch cart data after removal
+      refetch();
+    } catch (err) {
+      console.error("Failed to remove item:", err);
+      alert("Error removing item");
+    }
+  };
+
+  // Updated to use quantityChange and update local state immediately
+  const handleUpdateQuantity = async (productId, quantityChange) => {
+    console.log("Updating product quantity:", productId, quantityChange);
+    
+    // Update local cart immediately for responsive UI
+    setLocalCart(prevCart => prevCart.map(item => {
+      const itemProductId = item.product.id || item.product._id;
+      if (itemProductId === productId) {
+        // Calculate new quantity
+        const newQuantity = Math.max(1, item.quantity + quantityChange);
+        return {
+          ...item,
+          quantity: newQuantity
+        };
+      }
+      return item;
+    }));
+    
+    try {
+      await updateCartItem({
+        userId,
+        productId,
+        quantityChange
+      }).unwrap();
+      
+      // Refetch cart data to ensure sync with server
+      refetch();
+    } catch (err) {
+      console.error("Failed to update quantity:", err);
+      alert("Error updating quantity");
+      // Revert local cart on error
+      if (cartItems?.cart) {
+        setLocalCart(cartItems.cart);
+      }
+    }
   };
 
   const handleCheckout = () => {
@@ -78,24 +135,68 @@ const Cart = () => {
     );
   };
 
+  // Handler for when order is completed - called from CheckoutPage
+  const handleOrderCompleted = () => {
+    setShowCheckout(false);
+    refetch(); // Refetch cart data (should be empty after order)
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading cart</div>;
 
-  // Calculate total price
-  const totalPrice = cartItems?.cart?.reduce((total, item) => {
+  // Use localCart if available, otherwise fall back to cartItems.cart
+  const displayCart = localCart || cartItems?.cart || [];
+
+  // Calculate total price using the current display cart
+  const totalPrice = displayCart.reduce((total, item) => {
     return (
       total +
       parseFloat(item.product.price?.$numberDecimal || 0) * item.quantity
     );
   }, 0);
 
+  // Prepare properly formatted checkout data using the current local state
+  const prepareCheckoutData = () => {
+    console.log("Preparing checkout data from:", displayCart);
+    
+    if (!displayCart || !displayCart.length) {
+      return { cart: [] };
+    }
+    
+    // Create a properly formatted cart array for the checkout component
+    const formattedCart = displayCart.map(item => {
+      console.log("Formatting cart item for checkout:", item);
+      return {
+        product: {
+          ...item.product,
+          // Ensure both _id and id are available
+          _id: item.product._id || item.product.id,
+          id: item.product.id || item.product._id
+        },
+        quantity: item.quantity,
+        price: parseFloat(item.product.price?.$numberDecimal || 0)
+      };
+    });
+    
+    console.log("Formatted cart for checkout:", formattedCart);
+    
+    return { cart: formattedCart };
+  };
+
   // If showing checkout page
   if (showCheckout) {
-    return <CheckoutPage prescriptions={uploadedFiles} cartData={cartItems}/>;
+    const checkoutData = prepareCheckoutData();
+    return (
+      <CheckoutPage 
+        prescriptions={uploadedFiles} 
+        cartData={checkoutData} 
+        onOrderComplete={handleOrderCompleted}
+      />
+    );
   }
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth={false}>
       {uploadSuccess && (
         <Alert severity="success" sx={{ mb: 2 }}>
           Prescription uploaded successfully!
@@ -168,32 +269,61 @@ const Cart = () => {
       <Typography variant="h4" gutterBottom>
         Your Cart
       </Typography>
-      {cartItems?.cart?.length > 0 ? (
+      {displayCart.length > 0 ? (
         <>
-          {cartItems.cart.map((item, index) => (
-            <Card key={item.product.id || index} sx={{ marginBottom: "16px" }}>
-              <CardContent>
-                <Typography variant="h6">{item.product.name}</Typography>
-                <Typography variant="body2">
-                  Price: ₹
-                  {parseFloat(item.product.price?.$numberDecimal || 0).toFixed(
-                    2
-                  )}
-                </Typography>
-                <Typography variant="body2">
-                  Quantity: {item.quantity}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={() => handleRemoveItem(item.product.id)}
-                  sx={{ marginTop: "8px" }}
-                >
-                  Remove from Cart
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+          {displayCart.map((item, index) => {
+            const productId = item.product.id || item.product._id;
+            return (
+              <Card key={productId || index} sx={{ marginBottom: "16px" }}>
+                <CardContent>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Box>
+                      <Typography variant="h6">{item.product.name}</Typography>
+                      <Typography variant="body2">
+                        Price: ₹
+                        {parseFloat(item.product.price?.$numberDecimal || 0).toFixed(2)}
+                      </Typography>
+                      
+                      {/* Updated quantity adjustment controls to pass quantityChange */}
+                      <Box sx={{ display: "flex", alignItems: "center", mt: 1, mb: 1 }}>
+                        <Typography variant="body2" sx={{ mr: 2 }}>
+                          Quantity:
+                        </Typography>
+                        <ButtonGroup size="small" aria-label="quantity adjustment">
+                          <Button 
+                            onClick={() => handleUpdateQuantity(productId, -1)}
+                            disabled={item.quantity <= 1}
+                          >
+                            <RemoveIcon fontSize="small" />
+                          </Button>
+                          <Button disableRipple sx={{ cursor: "default", backgroundColor: "white" }}>
+                            {item.quantity}
+                          </Button>
+                          <Button onClick={() => handleUpdateQuantity(productId, +1)}>
+                            <AddIcon fontSize="small" />
+                          </Button>
+                        </ButtonGroup>
+                      </Box>
+                      
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => handleRemoveItem(productId)}
+                        sx={{ marginTop: "8px" }}
+                        startIcon={<DeleteIcon />}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                    
+                    <Typography variant="h6">
+                      ₹{(parseFloat(item.product.price?.$numberDecimal || 0) * item.quantity).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            );
+          })}
 
           <Card sx={{ marginTop: "20px", marginBottom: "20px" }}>
             <CardContent>
@@ -236,7 +366,17 @@ const Cart = () => {
           </Card>
         </>
       ) : (
-        <Typography variant="body1">Your cart is empty.</Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 4 }}>
+          <Typography variant="h6" gutterBottom>Your cart is empty.</Typography>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={() => window.location.href = "/"}
+            sx={{ mt: 2 }}
+          >
+            Continue Shopping
+          </Button>
+        </Box>
       )}
     </Container>
   );

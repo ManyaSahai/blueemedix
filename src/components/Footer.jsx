@@ -53,7 +53,7 @@ const Footer = () => {
                 Quick Links
               </Typography>
               <Link
-                href="/my-account"
+                href="/login"
                 color="inherit"
                 underline="none"
                 sx={{ mb: 1.5 }}
@@ -61,7 +61,7 @@ const Footer = () => {
                 My Account
               </Link>
               <Link
-                href="/my-orders"
+                href="/customer"
                 color="inherit"
                 underline="none"
                 sx={{ mb: 1.5 }}

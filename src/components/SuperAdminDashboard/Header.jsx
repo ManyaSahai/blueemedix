@@ -106,36 +106,13 @@ export default function Header() {
     { label: "Dashboard", icon: DashboardIcon, path: "dashboard" },
     { label: "Customers", icon: PeopleIcon, path: "users" },
     { label: "Orders", icon: InventoryIcon, path: "orders" },
-    { label: "Offers", icon: LocalOfferIcon, path: "offers" },
+    // { label: "Offers", icon: LocalOfferIcon, path: "offers" },
     { label: "Products", icon: InventoryIcon, path: "products" },
     { label: "Regional admin", icon: MapIcon, path: "regAdminList" },
-    { label: "Reports", icon: BarChartIcon, path: "reports" },
+    // { label: "Reports", icon: BarChartIcon, path: "reports" },
     { label: "Sellers", icon: StoreIcon, path: "sellers" },
-    {
-      label: "Special Product",
-      icon: StarIcon,
-      dropdown: (
-        <FormControl fullWidth margin="normal">
-          <InputLabel id="special-product-label">Special Products</InputLabel>
-          <Select
-            labelId="special-product-label"
-            id="special-product-select"
-            value={selectedSpecialProduct}
-            label="Special Products"
-            onChange={handleSpecialProductChange}
-          >
-            <MenuItem value="None">
-              <em>None</em>
-            </MenuItem>
-            {specialProductOptions.map((option) => (
-              <MenuItem key={option.path} value={option.path}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      ),
-    },
+    { label: "Top Selling Products", icon: StarIcon, path: "top-selling-products" },
+    
   ];
 
   // Group items by category
@@ -258,7 +235,7 @@ export default function Header() {
           </ListItem>
         ))}
         {/* Special Product with Dropdown */}
-        <ListItem key="special-product" disablePadding>
+        {/* <ListItem key="special-product" disablePadding>
           <ListItemButton sx={{ flexDirection: "column", alignItems: "flex-start", padding: "8px 16px" }}>
             <Box sx={{ display: "flex", alignItems: "center", marginBottom: 1 }}>
               <ListItemIcon sx={{ minWidth: "42px" }}>
@@ -268,7 +245,7 @@ export default function Header() {
             </Box>
             {DrawerItems.find((item) => item.label === "Special Product")?.dropdown}
           </ListItemButton>
-        </ListItem>
+        </ListItem> */}
       </List>
 
       {/* Footer area with version info */}

@@ -1,57 +1,77 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import getBaseUrl from "../utils/baseURL"
+import axios from "axios";
+import { Add, Remove} from "@mui/icons-material";
+import { Box, IconButton,Typography, Button } from "@mui/material";
 
 const BluemedixProducts = () => {
-  const products = [
-    {
-      id: 1,
-      name: "Dr Morepen BP Monitor BP-09",
-      image: "/src/images/1.jpg",
-      originalPrice: "Rs 1565.00",
-      discountedPrice: "Rs 1095.50",
-      discount: "30% OFF",
-    },
-    {
-      id: 2,
-      name: "Himalaya liv. 52 ds tablet",
-      image: "/src/images/2.jpg",
-      originalPrice: "Rs 155.00",
-      discountedPrice: "Rs 147.25",
-      discount: "5% OFF",
-    },
-    {
-      id: 3,
-      name: "Dettol Sensitive Liquid Handwash",
-      image: "/src/images/3.jpg",
-      originalPrice: "Rs 209.00",
-      discountedPrice: "Rs 202.73",
-      discount: "3% OFF",
-    },
-    {
-      id: 4,
-      name: "Complan Refill Powder Chocolate",
-      image: "/src/images/4.jpg",
-      originalPrice: "Rs 540.00",
-      discountedPrice: "Rs 518.40",
-      discount: "4% OFF",
-    },
-    {
-      id: 5,
-      name: "Himalaya Anti-Dandruff Shampoo",
-      image: "/src/images/5.jpg",
-      originalPrice: "Rs 260.00",
-      discountedPrice: "Rs 252.20",
-      discount: "3% OFF",
-    },
-    {
-      id: 6,
-      name: "Horlicks Mother's Powder Vanilla",
-      image: "/src/images/6.jpg",
-      originalPrice: "Rs 529.00",
-      discountedPrice: "Rs 513.13",
-      discount: "3% OFF",
-    },
-  ];
 
+  const [topProducts, setTopProducts] = useState([]);
+  const [quantities, setQuantities] = useState({});
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      try {
+        const res = await axios.get(`${getBaseUrl()}/analytics/top/top-products`);
+        setTopProducts(res.data);
+        console.log(topProducts)
+      } catch (error) {
+        console.error("Error fetching top products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTopProducts();
+  }, []);
+  const handleAddToCart = (productId, quantity) => {
+    const userId = localStorage.getItem("userId");
+    const role = localStorage.getItem("role")
+
+    if (!userId && role!=='Customer') {
+    alert("Please log in as a customer to add items to your cart.");
+    console.log(role)
+    window.location.href = '/login'; // Basic JavaScript redirect if no router is readily available
+    return;
+    }
+
+    fetch("http://localhost:5000/api/cart/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, productId, quantity }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to add item to cart");
+        }
+        return response.json();
+      })
+      .then(() => {
+        alert("Product added to cart!");
+      })
+      .catch((error) => {
+        console.error("Failed to add item to cart:", error);
+      });
+  };
+
+  const handleIncrement = (productId) => {
+    setQuantities((prevQuantities) => ({
+      ...prevQuantities,
+      [productId]: (prevQuantities[productId] || 1) + 1,
+    }));
+  };
+
+  const handleDecrement = (productId) => {
+    setQuantities((prevQuantities) => ({
+      ...prevQuantities,
+      [productId]:
+        prevQuantities[productId] > 1 ? prevQuantities[productId] - 1 : 1,
+    }));
+  };
+
+  if (loading) return <p>Loading top products...</p>;
   return (
     <div style={{ maxWidth: false, margin: "0 auto", padding: "20px" }}>
       <div
@@ -95,87 +115,114 @@ const BluemedixProducts = () => {
           gap: "15px",
         }}
       >
-        {products.map((product) => (
-          <div
-            key={product.id}
-            style={{
-              border: "1px solid #e0e0e0",
-              borderRadius: "5px",
-              overflow: "hidden",
-              backgroundColor: "white",
-              position: "relative",
-            }}
+        {topProducts.map((product) => {
+  const details = product.productDetails;
+  const hasDiscount = details.discount > 0;
+  const quantity = quantities[details._id] || 1;
+        
+  return (
+    <div style={{display:"flex", gap:"16px", alignItems:"center", justifyContent:"center"}}>
+    <div
+      key={product.productId}
+      style={{
+        border: "1px solid #e0e0e0",
+        borderRadius: "5px",
+        overflow: "hidden",
+        backgroundColor: "white",
+        position: "relative",
+        padding: "15px",
+        textAlign: "center",
+        width: "350px", // Ensure cards are same width
+        margin: "10px",
+      }}
+    >
+      {hasDiscount && (
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            right: "0",
+            backgroundColor: "#4caf50",
+            color: "white",
+            padding: "4px 8px",
+            fontWeight: "bold",
+            fontSize: "12px",
+          }}
+        >
+          {details.discount}% OFF
+        </div>
+      )}
+
+      <img
+        src={details.image_link}
+        alt={details.name}
+        style={{
+          maxWidth: "auto",
+          height: "100px",
+          objectFit: "contain",
+          marginBottom: "10px",
+        }}
+      />
+
+      <p
+        style={{
+          fontSize: "14px",
+          fontWeight: "500",
+          color: "#333",
+          marginBottom: "8px",
+          textWrap:"wrap"
+        }}
+      >
+        {details.name}
+      </p>
+
+      <p
+        style={{
+          fontSize: "14px",
+          color: "#4caf50",
+          fontWeight: "bold",
+        }}
+      >
+        ₹{details.price.toFixed(2)}
+      </p>
+
+      {/* Add to Cart Controls */}
+      <Box sx={{ mt: "auto", width: "100%" }}>
+        <Box display="flex" alignItems="center" mt={2} justifyContent="center">
+          <IconButton
+            onClick={() => handleDecrement(details._id)}
+            color="primary"
+            disabled={quantity <= 1}
+            size="small"
           >
-            {product.discount && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "0",
-                  backgroundColor: "#4caf50",
-                  color: "white",
-                  padding: "4px 8px",
-                  fontWeight: "bold",
-                  fontSize: "12px",
-                }}
-              >
-                {product.discount}
-              </div>
-            )}
+            <Remove />
+          </IconButton>
+          <Typography variant="body1" mx={1}>
+            {quantity}
+          </Typography>
+          <IconButton
+            onClick={() => handleIncrement(details._id)}
+            color="primary"
+            size="small"
+          >
+            <Add />
+          </IconButton>
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => handleAddToCart(details._id, quantity)}
+          sx={{ mt: 2, width: "100px" }}
+        >
+          Add to Cart
+        </Button>
+      </Box>
+    </div>
+    </div>
+  );
+})}
 
-            <div style={{ padding: "15px", textAlign: "center" }}>
-              <img
-                src={product.image}
-                alt={product.name}
-                style={{
-                  maxWidth: "100%",
-                  height: "120px",
-                  objectFit: "contain",
-                  marginBottom: "10px",
-                }}
-              />
 
-              <div style={{ height: "40px", marginBottom: "10px" }}>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#333",
-                    textAlign: "center",
-                    overflow: "hidden",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                  }}
-                >
-                  {product.name}
-                </p>
-              </div>
-
-              <div>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#757575",
-                    textDecoration: "line-through",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {product.originalPrice}
-                </p>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#4caf50",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {product.discountedPrice}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

@@ -91,7 +91,7 @@ const BluemedixProducts = () => {
             color: "#333",
           }}
         >
-          BLUEMEDIX
+          TOP SELLING PRODUCTS
         </h2>
         <button
           style={{
@@ -109,12 +109,13 @@ const BluemedixProducts = () => {
       </div>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-          gap: "15px",
-        }}
-      >
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "20px",
+  }}
+>
+
         {topProducts.map((product) => {
   const details = product.productDetails;
   const hasDiscount = details.discount > 0;
@@ -123,19 +124,21 @@ const BluemedixProducts = () => {
   return (
     <div style={{display:"flex", gap:"16px", alignItems:"center", justifyContent:"center"}}>
     <div
-      key={product.productId}
-      style={{
-        border: "1px solid #e0e0e0",
-        borderRadius: "5px",
-        overflow: "hidden",
-        backgroundColor: "white",
-        position: "relative",
-        padding: "15px",
-        textAlign: "center",
-        width: "350px", // Ensure cards are same width
-        margin: "10px",
-      }}
-    >
+  key={product.productId}
+  style={{
+    border: "1px solid #e0e0e0",
+    borderRadius: "8px",
+    backgroundColor: "white",
+    position: "relative",
+    padding: "15px",
+    textAlign: "center",
+    width: "100%",
+    height: "400px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  }}
+>
       {hasDiscount && (
         <div
           style={{

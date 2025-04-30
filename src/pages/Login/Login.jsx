@@ -79,7 +79,7 @@ const Login = () => {
     } else if (role === "Seller") {
       navigate("/seller");
     } else if(role === "Customer"){
-      navigate("/"); // Customer default
+      navigate("/customer"); // Customer default
     }else{
       alert("Error logging in")
     }

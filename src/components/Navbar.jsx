@@ -118,7 +118,8 @@ const SearchCategoryDropDown = [
 ];
 export const sortedSearchCategoryDropDown = SearchCategoryDropDown.slice().sort();
 
-const Navigation = [
+// Modified Navigation array with conditional item for Login/Dashboard
+const getNavigationItems = (isCustomer) => [
   {
     label: "Home",
     icon: <HomeIcon />,
@@ -135,22 +136,40 @@ const Navigation = [
     path: "/offers",
   },
   {
-    label: "Login",
-    icon: <PersonIcon />,
-    path: "/login",
+    label: isCustomer ? "Dashboard" : "Login",
+    icon: isCustomer ? <DashboardIcon /> : <PersonIcon />,
+    path: isCustomer ? "/customer" : "/login",
   },
 ];
 
 // Main component
 const Navbar = () => {
   const [searchCategory, setSearchCategory] = useState("All");
-  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false); // New state
-  const [categoryAnchorEl, setCategoryAnchorEl] = useState(null); // New state for anchor
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
+  const [isCustomer, setIsCustomer] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
   const navigate = useNavigate();
-  const categoryDropdownRef = useRef(null); // Ref for the dropdown
+  const categoryDropdownRef = useRef(null);
+
+  // Check localStorage for user role on component mount
+  useEffect(() => {
+    const userRole = localStorage.getItem('role');
+    setIsCustomer(userRole === 'Customer');
+    
+    // Get user info from localStorage if available
+    if (localStorage.getItem('name')) {
+      setUserName(localStorage.getItem('name'));
+    }
+    
+    if (localStorage.getItem('email')) {
+      setUserEmail(localStorage.getItem('email'));
+    }
+  }, []);
 
   const handleCategoryChange = (event) => {
     setSearchCategory(event.target.value);
@@ -167,7 +186,13 @@ const Navbar = () => {
   };
 
   const handleProfileClick = (event) => {
-    setProfileMenuAnchor(event.currentTarget);
+    if (isCustomer) {
+      // If customer, just navigate to dashboard without opening modal
+      navigate('/customer');
+    } else {
+      // If not customer, open the login/profile modal
+      setProfileMenuAnchor(event.currentTarget);
+    }
   };
 
   const handleProfileMenuClose = () => {
@@ -176,13 +201,22 @@ const Navbar = () => {
 
   const handleDashboardOpen = () => {
     setProfileMenuAnchor(null);
-    navigate("/dashboard");
+    navigate("/customer");
   };
 
   const handleLogout = () => {
     setProfileMenuAnchor(null);
-    // Add your logout logic here (e.g., clear local storage, API call)
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('name');
+    localStorage.removeItem('number');
+    localStorage.removeItem('region');
+    localStorage.removeItem('role');
+    localStorage.removeItem('email');
+    localStorage.removeItem('customerAddress');
+    setIsCustomer(false);
     alert("Logged out successfully!");
+    navigate('/');
   };
 
   // Close the category dropdown on outside click
@@ -203,6 +237,9 @@ const Navbar = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [categoryAnchorEl, categoryDropdownRef]);
+
+  // Get navigation items based on user role
+  const Navigation = getNavigationItems(isCustomer);
 
   return (
     <NavbarContainer sx={{ paddingY: "8px" }}>
@@ -321,56 +358,60 @@ const Navbar = () => {
               );
             }
 
-            // Modify the Login nav item to open profile menu
-            if (navItem.label === "Login") {
+            // Modified Login/Dashboard nav item
+            if (navItem.label === "Login" || navItem.label === "Dashboard") {
               return (
                 <NavItem
                   key={navItem.label}
                   sx={{ display: "flex", flexDirection: "column", gap: "2px", cursor: "pointer" }}
-                  onClick={handleProfileClick}
-                  aria-controls={profileMenuAnchor ? "profile-menu" : undefined}
-                  aria-expanded={Boolean(profileMenuAnchor) ? "true" : "false"}
+                  onClick={isCustomer ? () => navigate('/customer') : handleProfileClick}
+                  component={isCustomer ? Link : 'div'}
+                  to={isCustomer ? '/customer' : undefined}
+                  aria-controls={(!isCustomer && profileMenuAnchor) ? "profile-menu" : undefined}
+                  aria-expanded={(!isCustomer && Boolean(profileMenuAnchor)) ? "true" : "false"}
                 >
                   <CircleIconButton size="small">
                     {navItem.icon}
                   </CircleIconButton>
                   <Typography variant="body2">{navItem.label}</Typography>
 
-                  {/* Profile Menu */}
-                  <Menu
-                    anchorEl={profileMenuAnchor}
-                    open={Boolean(profileMenuAnchor)}
-                    onClose={handleProfileMenuClose}
-                    anchorOrigin={{
-                      vertical: "bottom",
-                      horizontal: "right",
-                    }}
-                    transformOrigin={{
-                      vertical: "top",
-                      horizontal: "right",
-                    }}
-                    id="profile-menu"
-                  >
-                    <Box sx={{ px: 2, py: 1 }}>
-                      <Typography variant="subtitle1">John Doe</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        john.doe@example.com
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    <MenuItem onClick={handleDashboardOpen}>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <DashboardIcon fontSize="small" sx={{ mr: 1 }} />
-                        <Typography>Dashboard</Typography>
+                  {/* Profile Menu - Only visible when not customer */}
+                  {!isCustomer && (
+                    <Menu
+                      anchorEl={profileMenuAnchor}
+                      open={Boolean(profileMenuAnchor)}
+                      onClose={handleProfileMenuClose}
+                      anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                      }}
+                      transformOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                      }}
+                      id="profile-menu"
+                    >
+                      <Box sx={{ px: 2, py: 1 }}>
+                        <Typography variant="subtitle1">John Doe</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          john.doe@example.com
+                        </Typography>
                       </Box>
-                    </MenuItem>
-                    <MenuItem onClick={handleLogout}>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
-                        <Typography>Logout</Typography>
-                      </Box>
-                    </MenuItem>
-                  </Menu>
+                      <Divider />
+                      <MenuItem onClick={handleDashboardOpen}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <DashboardIcon fontSize="small" sx={{ mr: 1 }} />
+                          <Typography>Dashboard</Typography>
+                        </Box>
+                      </MenuItem>
+                      <MenuItem onClick={handleLogout}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
+                          <Typography>Logout</Typography>
+                        </Box>
+                      </MenuItem>
+                    </Menu>
+                  )}
                 </NavItem>
               );
             }

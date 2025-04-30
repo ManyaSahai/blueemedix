@@ -50,8 +50,23 @@ export const ordersApi = createApi({
 
     // 3. Fetch orders by user (customer)
     getOrdersByUser: builder.query({
-      query: (userId) => `/user/${userId}`,
+      query: (userId) => {
+        // Check if userId is valid before making the request
+        if (!userId) {
+          // Return empty data to avoid making a request with invalid ID
+          return { 
+            url: '/empty-orders',
+            method: 'GET',
+            // This endpoint doesn't need to exist - RTK Query will handle the error
+          };
+        }
+        return `/user/${userId}`;
+      },
+      // Skip the query if userId is undefined
+      skip: (userId) => !userId,
       async onQueryStarted(userId, { queryFulfilled }) {
+        if (!userId) return { data: { orders: [] } };
+        
         try {
           const { data } = await queryFulfilled;
           for (const order of data.orders) {
@@ -62,9 +77,12 @@ export const ordersApi = createApi({
           return { data: { orders: cached } };
         }
       },
+      // Transform the response in case of error to provide empty orders
+      transformErrorResponse: () => {
+        return { data: { orders: [] } };
+      },
       providesTags: ['Order'],
     }),
-
     // 4. Fetch orders by seller
     getOrdersBySeller: builder.query({
       query: ({ sellerId, status }) => `/seller/${sellerId}${status ? `?status=${status}` : ''}`,

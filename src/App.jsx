@@ -54,7 +54,18 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/category/:categoryId" element={<Category />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/dashboard" element={<CustomerDashboard />} />
+        <Route
+          path="/customer/*"
+          element={
+            <ProtectedRoute allowedRoles={["Customer"]}>
+             <Routes>
+                <Route index element={<CustomerDashboard />} />
+                <Route path="profile" element={<Profile />} />
+                {/* Add other seller-specific routes here */}
+              </Routes>
+            </ProtectedRoute>
+          }
+        />
         {/* uncomment below line */}
         <Route path="/login" element={<Login />} />
         <Route path="/login2" element={<Register />} />
@@ -63,11 +74,34 @@ function App() {
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/:id" element={<OrderDetails />} />
         {/* Seller routes */}
-        <Route path="/seller" element={<SellerDashboard />} />
-        <Route path="/seller/profile" element={<Profile />} />{" "}
-        <Route path="/regional-admin/profile" element={<Profile />} />{" "}
+        <Route
+          path="/seller/*"
+          element={
+            <ProtectedRoute allowedRoles={["Seller"]}>
+              <Routes>
+                <Route index element={<SellerDashboard />} />
+                <Route path="profile" element={<Profile />} />
+                {/* Add other seller-specific routes here */}
+              </Routes>
+            </ProtectedRoute>
+          }
+        />
+
+
+        
         {/* Add this new route for the profile page */}
-        <Route path="/regional-admin" element={<RegionalAdmin />} />
+        <Route
+          path="/regional-admin/*"
+          element={
+            <ProtectedRoute allowedRoles={["RegionalAdmin"]}>
+              <Routes>
+                <Route index element={<RegionalAdmin />} />
+                <Route path="profile" element={<Profile />} />
+                {/* Add other regional admin-specific routes here */}
+              </Routes>
+            </ProtectedRoute>
+          }
+        />
         {/* <Route path="/admin" element={<SuperAdmin />} /> */}
         <Route
           path="/admin/*"
@@ -77,7 +111,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="products" replace />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="users" element={<Users />} />

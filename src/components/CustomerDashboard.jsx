@@ -4,21 +4,13 @@ import {
   Button,
   Container,
   Paper,
-  Grid,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Card,
-  CardContent,
   Typography,
   Avatar,
   IconButton,
   Menu,
   MenuItem,
-  Badge,
-  Chip,
+  Divider,
+  ListItemIcon,
   Table,
   TableBody,
   TableCell,
@@ -26,103 +18,71 @@ import {
   TableHead,
   TableRow,
   Tooltip,
+  Chip,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ShoppingBag,
-  LocalShipping,
-  AccountCircle,
-  Favorite,
-  LocationOn,
-  Help,
+  Person,
   Logout,
   Download,
   ArrowBack,
-  Person,
-  Email,
-  Phone,
-  CalendarToday,
-  Home,
-  Work,
-  Payment,
 } from "@mui/icons-material";
-import { useGetOrdersByUserQuery , useGetOrderByIdQuery} from "../redux/ordersApi";
-import Navbar from "./Navbar";
-// import Orders from "./Orders";
+import { useGetOrdersByUserQuery } from "../redux/ordersApi";
+import jsPDF from "jspdf";
+import { autoTable } from 'jspdf-autotable'; 
 
 const DashboardContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(4),
   paddingBottom: theme.spacing(4),
 }));
 
-const OrderStatusChip = styled(Chip)(({ status }) => ({
-  backgroundColor:
-    status === "Delivered"
-      ? "#4caf50"
-      : status === "Shipped"
-      ? "#2196f3"
-      : status === "Processing"
-      ? "#ff9800"
-      : "#f44336",
-  color: "white",
-}));
+const OrderStatusChip = styled(Chip)(({ status }) => {
+  const getStatusColor = () => {
+    switch (status.toLowerCase()) {
+      case "delivered":
+        return "#4caf50";
+      case "dispatched":
+        return "#2196f3";
+      case "accepted":
+        return "#ff9800";
+      case "rejected":
+      case "cancelled":
+        return "#f44336";
+      case "pending":
+      default:
+        return "#9e9e9e";
+    }
+  };
 
-const InvoiceButton = styled(Button)(({ theme }) => ({
-  textTransform: "none",
-  marginRight: theme.spacing(1),
-}));
+  return {
+    backgroundColor: getStatusColor(),
+    color: "white",
+  };
+});
 
 const DashboardPage = () => {
-  const [activeTab, setActiveTab] = React.useState("orders");
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const storedAddress = localStorage.getItem("customerAddress") ? JSON.parse(localStorage.getItem("customerAddress"))
-  : null;
-
-const name = localStorage.getItem("name");
-const e_mail = localStorage.getItem("email");
-const phone_no = localStorage.getItem("number");
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [snackbar, setSnackbar] = React.useState({
+    open: false,
+    message: "",
+    severity: "info"
+  });
+  
+  const name = localStorage.getItem("name");
+  const e_mail = localStorage.getItem("email");
   const userId = localStorage.getItem("userId");
-  const { data, isLoading, isError } = useGetOrdersByUserQuery(userId);
+  
+  // Only fetch orders if there's a valid userId (not null or "null")
+  const validUserId = userId && userId !== "null" ? userId : undefined;
+  const { data, isLoading, isError } = useGetOrdersByUserQuery(validUserId);
   const navigate = useNavigate();
   const open = Boolean(anchorEl);
-  // console.log(data)
-  
-
-  // Mock order data with invoice URLs
-  // const orders = [
-  //   {
-  //     id: "ORD-12345",
-  //     date: "2023-04-15",
-  //     status: "Delivered",
-  //     total: "$124.95",
-  //     items: 3,
-  //     tracking: "UPS-1Z999AA1012345678",
-  //     invoiceUrl: "https://example.com/invoices/ORD-12345.pdf",
-  //   },
-  //   {
-  //     id: "ORD-12346",
-  //     date: "2023-04-02",
-  //     status: "Shipped",
-  //     total: "$56.80",
-  //     items: 2,
-  //     tracking: "FEDEX-123456789012",
-  //     invoiceUrl: "https://example.com/invoices/ORD-12346.pdf",
-  //   },
-  //   {
-  //     id: "ORD-12347",
-  //     date: "2023-03-28",
-  //     status: "Processing",
-  //     total: "$89.50",
-  //     items: 1,
-  //     tracking: "",
-  //     invoiceUrl: "https://example.com/invoices/ORD-12347.pdf",
-  //   },
-  // ];
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-  };
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -133,22 +93,139 @@ const phone_no = localStorage.getItem("number");
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('name');
+    localStorage.removeItem('number');
+    localStorage.removeItem('region');
+    localStorage.removeItem('role');
+    localStorage.removeItem('email');
+    localStorage.removeItem('customerAddress');
     handleMenuClose();
     navigate("/login");
   };
 
-  const handleDownloadInvoice = (invoiceUrl) => {
-    // In a real app, this would trigger the download
-    window.open(invoiceUrl, "_blank");
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const showNotification = (message, severity = "info") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
+  };
+
+  const generateInvoicePDF = (invoiceData) => {
+    const doc = new jsPDF();
+  
+    // Invoice header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("INVOICE", 105, 20, { align: "center" });
+  
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+  
+    // Company and order info
+    doc.text("BlueMedix", 14, 40);
+    doc.text("Invoice #: " + invoiceData.orderId.substring(0, 10), 14, 45);
+    doc.text("Date: " + new Date(invoiceData.orderDate).toLocaleDateString(), 14, 50);
+    doc.text("Status: " + invoiceData.status, 14, 55);
+  
+    // Customer info
+    doc.text("Bill To:", 140, 40);
+    doc.text(invoiceData.customerName, 140, 45);
+    doc.text(invoiceData.shippingAddress.first_line, 140, 50);
+    if (invoiceData.shippingAddress.second_line) {
+      doc.text(invoiceData.shippingAddress.second_line, 140, 55);
+    }
+    doc.text(`${invoiceData.shippingAddress.city}, ${invoiceData.shippingAddress.state} - ${invoiceData.shippingAddress.pin_code}`, 140, 60);
+  
+    // Items table
+    const tableColumn = ["Item", "Quantity", "Price (₹)", "Total (₹)"];
+    const tableRows = invoiceData.items.map(item => [
+      item.name,
+      item.quantity,
+      item.price.toFixed(2),
+      item.total.toFixed(2)
+    ]);
+  
+    autoTable(doc, { // Use the imported autoTable function
+      startY: 70,
+      head: [tableColumn],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [96, 125, 139] },
+      margin: { top: 20 },
+    });
+  
+    // Summary
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFont("helvetica", "bold");
+    doc.text("Payment Information:", 14, finalY);
+    doc.setFont("helvetica", "normal");
+    doc.text("Payment Method: " + invoiceData.paymentMethod.toUpperCase(), 14, finalY + 5);
+    doc.text("Payment Status: " + invoiceData.paymentStatus, 14, finalY + 10);
+  
+    // Total
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Amount:", 14, finalY + 15); // Moved Total under Payment Info
+    doc.text("₹" + invoiceData.totalAmount.toFixed(2), 170, finalY + 15, { align: "right" }); // Aligned to the right
+  
+    // Footer
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.text("Thank you for shopping with BlueMedix!", 105, finalY + 30, { align: "center" }); // Adjusted footer position
+  
+    // Save PDF
+    const fileName = `Invoice-${invoiceData.orderId.substring(0, 8)}.pdf`;
+    doc.save(fileName);
+  };
+
+  const handleDownloadInvoice = async (orderId) => {
+    setIsDownloading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`http://localhost:5000/api/order/invoice/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice data');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        generateInvoicePDF(data.invoice);
+        showNotification("Invoice downloaded successfully", "success");
+      } else {
+        throw new Error(data.message || 'Failed to generate invoice');
+      }
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      showNotification(`Error: ${error.message}`, "error");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleBackToStore = () => {
     navigate("/");
   };
+  
+  const handleProfileClick = () => {
+    navigate("/customer/profile");
+    handleMenuClose();
+  };
 
   return (
-    <DashboardContainer maxWidth={false}>
-      <Navbar />
+    <DashboardContainer maxWidth="xl">
       {/* Header with back button and profile */}
       <Box
         sx={{
@@ -178,9 +255,9 @@ const phone_no = localStorage.getItem("number");
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
           >
-            <Badge overlap="circular">
-              <Avatar sx={{ width: 40, height: 40 }}>{name}</Avatar>
-            </Badge>
+            <Avatar sx={{ width: 40, height: 40, bgcolor: "primary.main" }}>
+              {name ? name.charAt(0).toUpperCase() : "U"}
+            </Avatar>
           </IconButton>
 
           <Menu
@@ -190,24 +267,26 @@ const phone_no = localStorage.getItem("number");
             onClose={handleMenuClose}
             onClick={handleMenuClose}
             PaperProps={{
-              elevation: 0,
+              elevation: 2,
               sx: {
                 overflow: "visible",
                 filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
                 mt: 1.5,
-                "& .MuiAvatar-root": {
-                  width: 32,
-                  height: 32,
-                  ml: -0.5,
-                  mr: 1,
+                minWidth: 180,
+                "& .MuiMenuItem-root": {
+                  px: 2,
+                  py: 1,
                 },
               },
             }}
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <MenuItem onClick={handleMenuClose}>
-              <Avatar /> My Account
+            <MenuItem onClick={handleProfileClick}>
+              <ListItemIcon>
+                <Person fontSize="small" />
+              </ListItemIcon>
+              Profile
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>
@@ -220,526 +299,127 @@ const phone_no = localStorage.getItem("number");
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
-        {/* Sidebar */}
-        <Grid item xs={12} md={3}>
-          <Paper elevation={3} sx={{ p: 2 }}>
-            <List component="nav" sx={{ py: 0 }}>
-              <ListItem
-                button
-                selected={activeTab === "orders"}
-                onClick={() => handleTabChange("orders")}
-              >
-                <ListItemIcon>
-                  <ShoppingBag
-                    color={activeTab === "orders" ? "primary" : "inherit"}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="My Orders" />
-              </ListItem>
+      {/* Main Content */}
+      <Paper elevation={3} sx={{ minHeight: "70vh", p: 3, borderRadius: 2 }}>
+        <Box>
+          <Typography variant="h5" sx={{ mb: 3, fontWeight: 500 }}>
+            My Orders
+          </Typography>
 
-              <ListItem
-                button
-                selected={activeTab === "tracking"}
-                onClick={() => handleTabChange("tracking")}
-              >
-                <ListItemIcon>
-                  <LocalShipping
-                    color={activeTab === "tracking" ? "primary" : "inherit"}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Order Tracking" />
-              </ListItem>
-
-              <ListItem
-                button
-                selected={activeTab === "profile"}
-                onClick={() => handleTabChange("profile")}
-              >
-                <ListItemIcon>
-                  <AccountCircle
-                    color={activeTab === "profile" ? "primary" : "inherit"}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Profile" />
-              </ListItem>
-
-              <ListItem
-                button
-                selected={activeTab === "addresses"}
-                onClick={() => handleTabChange("addresses")}
-              >
-                <ListItemIcon>
-                  <LocationOn
-                    color={activeTab === "addresses" ? "primary" : "inherit"}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Addresses" />
-              </ListItem>
-
-              <ListItem
-                button
-                selected={activeTab === "wishlist"}
-                onClick={() => handleTabChange("wishlist")}
-              >
-                <ListItemIcon>
-                  <Favorite
-                    color={activeTab === "wishlist" ? "primary" : "inherit"}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Wishlist" />
-              </ListItem>
-
-              <Divider sx={{ my: 1 }} />
-
-              <ListItem button>
-                <ListItemIcon>
-                  <Help />
-                </ListItemIcon>
-                <ListItemText primary="Help & Support" />
-              </ListItem>
-            </List>
-          </Paper>
-        </Grid>
-
-        {/* Main Content */}
-        <Grid item xs={12} md={9}>
-          <Paper elevation={3} sx={{ minHeight: "70vh", p: 3 }}>
-            {/* Orders Tab */}
-            {activeTab === "orders" && (
-              <Box>
-                <Typography variant="h5" sx={{ mb: 3 }}>
-                  My Orders
-                </Typography>
-
-                {data?.orders?.length > 0 ? (
-                  <TableContainer component={Paper} elevation={0} variant="outlined">
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Order ID</TableCell>
-                          <TableCell>Date</TableCell>
-                          <TableCell>Items</TableCell>
-                          <TableCell>Total</TableCell>
-                          <TableCell>Status</TableCell>
-                          <TableCell>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {data.orders.map((order) => (
-                          <TableRow key={order._id}>
-                            <TableCell>{order._id}</TableCell>
-                            <TableCell>
-                              {new Date(order.createdAt).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              {order.items.map((item, index) => (
-                                <Typography
-                                  variant="body2"
-                                  key={index}
-                                  sx={{ whiteSpace: "nowrap" }}
-                                >
-                                  - {item.product?.name} × {item.quantity}
-                                </Typography>
-                              ))}
-                            </TableCell>
-                            <TableCell>₹{order.totalAmount}</TableCell>
-                            <TableCell>
-                              <OrderStatusChip
-                                label={order.status}
-                                size="small"
-                                status={order.status.toLowerCase()}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                                <Tooltip title="Download Invoice">
-                                  <InvoiceButton
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<Download />}
-                                    onClick={() =>
-                                      handleDownloadInvoice(order.invoiceUrl)
-                                    }
-                                  >
-                                    Invoice
-                                  </InvoiceButton>
-                                </Tooltip>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() => navigate(`/orders/${order._id}`)}
-                                >
-                                  Details
-                                </Button>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
+          {isLoading ? (
+            <Box sx={{ textAlign: "center", py: 5 }}>
+              <Typography>Loading your orders...</Typography>
+            </Box>
+          ) : isError ? (
+            <Box sx={{ textAlign: "center", py: 5 }}>
+              <Typography color="error">
+                There was an error loading your orders. Please try again.
+              </Typography>
+            </Box>
+          ) : data?.orders?.length > 0 ? (
+            <TableContainer 
+              component={Paper} 
+              elevation={0} 
+              variant="outlined"
+              sx={{ borderRadius: 2, overflow: "hidden" }}
+            >
+              <Table>
+                <TableHead sx={{ backgroundColor: "rgba(0, 0, 0, 0.04)" }}>
+                  <TableRow>
+                    <TableCell>Order ID</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Items</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Invoice</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data.orders.map((order) => (
+                    <TableRow key={order._id} hover>
+                      <TableCell>{order._id.substring(0, 8)}...</TableCell>
+                      <TableCell>
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {order.items.map((item, index) => (
+                          <Typography
+                            variant="body2"
+                            key={index}
+                            sx={{ 
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "150px"
+                            }}
+                          >
+                            {item.product?.name} × {item.quantity}
+                          </Typography>
                         ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Box sx={{ textAlign: "center", py: 5 }}>
-                    <ShoppingBag
-                      sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
-                    />
-                    <Typography variant="h6" color="text.secondary">
-                      No orders yet
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      sx={{ mt: 2 }}
-                      component={Link}
-                      to="/"
-                    >
-                      Start Shopping
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            )}
-
-
-            {/* Order Tracking Tab */}
-            {activeTab === "tracking" && (
-              <Box>
-                <Typography variant="h5" sx={{ mb: 3 }}>
-                  Order Tracking
-                </Typography>
-
-                {orders.filter((o) => o.tracking).length > 0 ? (
-                  <Grid container spacing={3}>
-                    {orders
-                      .filter((o) => o.tracking)
-                      .map((order) => (
-                        <Grid item xs={12} key={order.id}>
-                          <Card variant="outlined">
-                            <CardContent>
-                              <Grid container spacing={2} alignItems="center">
-                                <Grid item xs={12} sm={3}>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    Order ID
-                                  </Typography>
-                                  <Typography variant="subtitle1">
-                                    {order.id}
-                                  </Typography>
-                                </Grid>
-                                <Grid item xs={6} sm={3}>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    Tracking Number
-                                  </Typography>
-                                  <Typography variant="subtitle2">
-                                    {order.tracking}
-                                  </Typography>
-                                </Grid>
-                                <Grid item xs={6} sm={3}>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    Status
-                                  </Typography>
-                                  <OrderStatusChip
-                                    label={order.status}
-                                    size="small"
-                                    status={order.status.toLowerCase()}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} sm={3}>
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    fullWidth
-                                    onClick={() =>
-                                      window.open(
-                                        `https://www.ups.com/track?tracknum=${order.tracking}`,
-                                        "_blank"
-                                      )
-                                    }
-                                  >
-                                    Track Package
-                                  </Button>
-                                </Grid>
-                              </Grid>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      ))}
-                  </Grid>
-                ) : (
-                  <Box sx={{ textAlign: "center", py: 5 }}>
-                    <LocalShipping
-                      sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
-                    />
-                    <Typography variant="h6" color="text.secondary">
-                      No shipments to track
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      Your recent orders don't have tracking information yet
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            )}
-
-            {/* Profile Tab */}
-            {activeTab === "profile" && (
-              <Box>
-                <Typography variant="h5" sx={{ mb: 3 }}>
-                  Profile Information
-                </Typography>
-
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography
-                          variant="h6"
-                          sx={{ mb: 2, display: "flex", alignItems: "center" }}
-                        >
-                          <Person sx={{ mr: 1 }} /> Personal Details
-                        </Typography>
-
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                          <Grid item xs={12} sm={6}>
-                            <Typography variant="body2" color="text.secondary">
-                            Name
-                            </Typography>
-                            <Typography variant="body1">{name}</Typography>
-                          </Grid>
-                          
-                        </Grid>
-
-                        <Divider sx={{ my: 2 }} />
-
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Email
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{ display: "flex", alignItems: "center" }}
+                      </TableCell>
+                      <TableCell>₹{order.totalAmount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <OrderStatusChip
+                          label={order.status}
+                          size="small"
+                          status={order.status.toLowerCase()}
+                          sx={{ fontWeight: 500 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="Download Invoice">
+                          <IconButton
+                            color="primary"
+                            size="small"
+                            onClick={() => handleDownloadInvoice(order._id)}
+                            disabled={isDownloading}
                           >
-                            <Email fontSize="small" sx={{ mr: 1 }} />{" "}
-                            {e_mail}
-                          </Typography>
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Phone
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{ display: "flex", alignItems: "center" }}
-                          >
-                            <Phone fontSize="small" sx={{ mr: 1 }} /> +1 (555)
-                            {phone_no}
-                          </Typography>
-                        </Box>
-
-                        {/* <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Date of Birth
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{ display: "flex", alignItems: "center" }}
-                          >
-                            <CalendarToday fontSize="small" sx={{ mr: 1 }} />{" "}
-                            January 15, 1990
-                          </Typography>
-                        </Box> */}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography
-                          variant="h6"
-                          sx={{ mb: 2, display: "flex", alignItems: "center" }}
-                        >
-                          <Payment sx={{ mr: 1 }} /> Payment Methods
-                        </Typography>
-
-                        <Typography variant="body2" color="text.secondary">
-                          You haven't saved any payment methods yet.
-                        </Typography>
-
-                        <Button variant="outlined" sx={{ mt: 2 }}>
-                          Add Payment Method
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Button variant="contained" color="primary">
-                      Edit Profile
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            )}
-
-            {/* Addresses Tab */}
-            {activeTab === "addresses" && (
-              <Box>
-                <Typography variant="h5" sx={{ mb: 3 }}>
-                  Saved Addresses
-                </Typography>
-
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
-                        >
-                          <Home sx={{ mr: 1 }} />
-                          <Typography variant="subtitle1">
-                            Home Address
-                          </Typography>
-                        </Box>
-
-                        <Typography variant="body2">
-                          {storedAddress ? (
-                            <>
-                              {storedAddress.first_line}, {storedAddress.second_line}
-                              <br />
-                              {storedAddress.city}, {storedAddress.state} {storedAddress.pin_code}
-                              <br />
-                              India
-                            </>
-                          ) : (
-                            "No address available"
-                          )}
-                        </Typography>
-
-                        <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                          <Button variant="outlined" size="small">
-                            Edit
-                          </Button>
-                          <Button variant="outlined" size="small" color="error">
-                            Delete
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
-                        >
-                          <Work sx={{ mr: 1 }} />
-                          <Typography variant="subtitle1">
-                            Work Address
-                          </Typography>
-                        </Box>
-
-                        <Typography variant="body2">
-                          456 Business Ave
-                          <br />
-                          Suite 200
-                          <br />
-                          New York, NY 10005
-                          <br />
-                          United States
-                        </Typography>
-
-                        <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                          <Button variant="outlined" size="small">
-                            Edit
-                          </Button>
-                          <Button variant="outlined" size="small" color="error">
-                            Delete
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Card
-                      variant="outlined"
-                      sx={{ borderStyle: "dashed", height: "100%" }}
-                    >
-                      <CardContent
-                        sx={{
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          p: 4,
-                        }}
-                      >
-                        <Typography
-                          variant="body1"
-                          sx={{ mb: 2, textAlign: "center" }}
-                        >
-                          Add a new address
-                        </Typography>
-                        <Button variant="contained">Add Address</Button>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-              </Box>
-            )}
-
-            {/* Wishlist Tab */}
-            {activeTab === "wishlist" && (
-              <Box>
-                <Typography variant="h5" sx={{ mb: 3 }}>
-                  Your Wishlist
-                </Typography>
-
-                <Box sx={{ textAlign: "center", py: 5 }}>
-                  <Favorite
-                    sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
-                  />
-                  <Typography variant="h6" color="text.secondary">
-                    Your wishlist is empty
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    Save items you like for future purchases
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    component={Link}
-                    to="/"
-                  >
-                    Continue Shopping
-                  </Button>
-                </Box>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+                            {isDownloading ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              <Download />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ textAlign: "center", py: 5 }}>
+              <ShoppingBag
+                sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+              />
+              <Typography variant="h6" color="text.secondary">
+                No orders yet
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                sx={{ mt: 2 }}
+                component={Link}
+                to="/"
+              >
+                Start Shopping
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+      
+      {/* Notification Snackbar */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </DashboardContainer>
   );
 };

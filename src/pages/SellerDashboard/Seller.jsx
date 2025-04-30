@@ -308,6 +308,8 @@ function SellerDashboard() {
     localStorage.removeItem('number')
     localStorage.removeItem('region')
     localStorage.removeItem('role')
+    localStorage.removeItem('email')
+    localStorage.removeItem('customerAddress')
     navigate("/login"); // Redirect to login page
   };
 
